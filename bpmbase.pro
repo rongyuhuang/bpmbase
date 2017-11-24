@@ -6,4 +6,5 @@ SUBDIRS = \
     evpp_demos \
     imgui_demo \
     utils_test \
-    qtbinpatcher
+    qtbinpatcher \
+    CppPrimerExercise
