@@ -1,0 +1,17 @@
+使用bcp.exe剪切boost库：首先百度，得到如下结果：
+
+1. vc命令行进入下载的boost包的根目录
+2. bootstrap.bat，得到bjam.exe
+3. bjam tools/bcp，在dist\bin目录下会得到bcp.exe
+使用bcp工具就可以分离出想要的文件了。
+dist\bin\bcp boost\shared_ptr.hpp c:\boostX
+
+如下：
+
+1.因为boost已经是编译过了，官网直接下载的1.5.9，bjam.exe直接有了，所以跳过1
+2.直接进入将bjam.exe拷贝到tools/bcp，运行bjam，不需要参数，在bin.v2/tools/bcp下生成了bcp
+3.直接将bcp拷贝到boost库的根目录，然后直接使用命令行操作
+
+bcp fboost\ilesystem.hpp output
+
+然后在boost根目录下的output，裁剪了一个迷你版的boost库。

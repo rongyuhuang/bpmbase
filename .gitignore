@@ -1,0 +1,7 @@
+build-*/
+*.pro.user
+*.bak
+*.pyc
+*.pyo
+*.autosave
+~*
