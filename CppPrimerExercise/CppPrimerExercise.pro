@@ -5,7 +5,8 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     cppprimerch1.cpp \
-    cppprimerch2.cpp
+    cppprimerch2.cpp \
+    cppprimerch4.cpp
 
 HEADERS += \
     Sales_item.h
