@@ -116,6 +116,7 @@ void ch4_10()
     {
         ivec[idx]=cnt;
     }
+    auto beg = ivec.begin();
     while(beg !=ivec.end() && *beg>=0)
     {
         std::cout<<*beg++<<std::endl;
