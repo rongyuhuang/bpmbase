@@ -66,6 +66,7 @@ void ch5_45()
     //迭代语句
     std::vector<int> ivec ;
     int i;
+    std::cout<<"input number"<<std::endl;
     while(std::cin>>i)
     {
         ivec.push_back(i);
@@ -127,7 +128,7 @@ void ch5_6()
                 throw ;//runtime_error()
             }
         }
-        catch()
+        catch(int i)
         {
             std::cout<<"two book have different isbn"<<std::endl;
 
