@@ -19,6 +19,12 @@ public:
     Sales_data(const std::string&s,unsigned n,double p):bookNo(s),units_sold(n),revenue(p*n){}
     Sales_data(std::istream&);
 
+    //委托构造函数
+//    Sales_data():Sales_data("",0,0){}
+//    Sales_data(std::string &s):Sales_data(s,0,0){}
+
+    //阻止 隐式转换
+    //explicit Sales_data(std::istream &);
     //默认情况下，this的类型是指向类类型非常量版本的常量指针。
     std::string isbn()const
     {

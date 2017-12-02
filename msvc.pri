@@ -62,7 +62,7 @@ INCLUDEPATH += \
     $$PWD
 
 # vcpkg目录=
-VCPKG_DIR = C:/projects/vcpkg/installed/x86-windows-static
+VCPKG_DIR = D:/projects/vcpkg/installed/x86-windows-static
 INCLUDEPATH += \
     $$VCPKG_DIR/include
 
