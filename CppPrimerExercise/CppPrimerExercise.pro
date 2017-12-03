@@ -12,7 +12,8 @@ SOURCES += main.cpp \
     cppprimerch7.cpp \
     sales_data.cpp \
     cppprimerch8.cpp \
-    cppprimerch9.cpp
+    cppprimerch9.cpp \
+    cppprimerch10.cpp
 
 HEADERS += \
     Sales_item.h \

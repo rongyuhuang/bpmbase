@@ -9,6 +9,7 @@
 #include"cppprimerch7.cpp"
 #include"cppprimerch8.cpp"
 #include"cppprimerch9.cpp"
+#include"cppprimerch10.cpp"
 int main(int argc, char *argv[])
 {
 
@@ -20,7 +21,8 @@ int main(int argc, char *argv[])
     //testCh6();
     //testCh7();
     //testCh8();
-    testCh9();
+    //testCh9();
+    testCh10();
     system("pause");
     return 0;
 }
