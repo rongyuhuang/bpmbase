@@ -14,11 +14,14 @@ SOURCES += main.cpp \
     cppprimerch8.cpp \
     cppprimerch9.cpp \
     cppprimerch10.cpp \
-    cppprimerch11.cpp
+    cppprimerch11.cpp \
+    cppprimerch12.cpp \
+    strblob.cpp
 
 HEADERS += \
     Sales_item.h \
     sales_data.h \
-    screen.h
+    screen.h \
+    strblob.h
 
 include(../msvc.pri)

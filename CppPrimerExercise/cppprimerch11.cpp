@@ -43,7 +43,7 @@ void ch11_2()
     std::pair<std::string,int> ann;
     std::pair<std::string,std::vector<int>> lines;
     std::pair<std::string,std::string> author{"Jame","Jone"};
-    std::cout<<"first name:"<<author.first<<",last name:"<<author.second<<std::end;
+    std::cout<<"first name:"<<author.first<<",last name:"<<author.second<<std::endl;
 }
 
 
@@ -143,7 +143,7 @@ void ch11_3()
     }
     if(wordCount.erase("C++"))
     {
-        std::cout<<"ok:"<<"C++"<<" removed."<<std::end;
+        std::cout<<"ok:"<<"C++"<<" removed."<<std::endl;
     }
     else
     {
@@ -151,11 +151,12 @@ void ch11_3()
     }
 
     wordCount["Anna"]=1;
-    std::cout<<wordCount.at(1)<<std::endl;
+    //auto temp=wordCount.at(1);
+    //std::cout<<wordCount.at(1)<<std::endl;
 
     //访问元素
-    std::cout<<"set2.find(2)="<<set2.find(2)<<std::endl;
-    std::cout<<"set2.find(15)="<<set2.find(15)<<std::endl;
+    std::cout<<"set2.find(2)="<<*set2.find(2)<<std::endl;
+    std::cout<<"set2.find(15)="<<*set2.find(15)<<std::endl;
     std::cout<<"set2.count(2)="<<set2.count(2)<<std::endl;
     std::cout<<"set2.count(15)="<<set2.count(15)<<std::endl;
 

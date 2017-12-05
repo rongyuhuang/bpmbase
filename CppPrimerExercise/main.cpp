@@ -11,6 +11,7 @@
 #include"cppprimerch9.cpp"
 #include"cppprimerch10.cpp"
 #include"cppprimerch11.cpp"
+#include"cppprimerch12.cpp"
 int main(int argc, char *argv[])
 {
 
@@ -24,7 +25,8 @@ int main(int argc, char *argv[])
     //testCh8();
     //testCh9();
     //testCh10();
-    testCh11();
+    //testCh11();
+    testCh12();
     system("pause");
     return 0;
 }
