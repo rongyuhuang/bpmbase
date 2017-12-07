@@ -3,8 +3,8 @@
 #include<memory>
 #include<list>
 #include<vector>
-
-#include"strblob.h"
+#include<fstream>
+#include"textquery.h"
 
 void ch12_1_1()
 {
@@ -48,13 +48,13 @@ void ch12_1_1()
     //        std::cout<<x<<" @ "<<&x<<"\t";
     //    }
     //    std::cout<<std::endl;
-    StrBlob b1;
-    {
-        StrBlob b2={"a","an","the"};
-        b1=b2;
-        b2.push_back("sd");
-    }
-    std::cout<<b1.size()<<std::endl;
+//    StrBlob b1;
+//    {
+//        StrBlob b2={"a","an","the"};
+//        b1=b2;
+//        b2.push_back("sd");
+//    }
+//    std::cout<<b1.size()<<std::endl;
 }
 
 void ch12_1_2()
@@ -66,21 +66,21 @@ void ch12_1_2()
     //直接初始化
     int* pi2 = new int(12); //初始化为指向对象的值为12
     std::string *ps2 = new std::string(10,'s');//*ps为 ssssssssss
-    std::vector<int> *pvi = new std::vector<int>{0,1,2,3,4,5,9,6,7,8};
+    //std::vector<int> *pvi = new std::vector<int>{0,1,2,3,4,5,9,6,7,8};
 
     //值初始化
     int* pi3 = new int(); //值初始化为 0
     std::string *ps3 = new std::string(); //值初始化为 空 string
 
     //动态分配const对象
-    const int* cpi1 = new const int(10124);
+    const int* cpi1 = new const int(1024);
     const std::string *cps1 = new const std::string;
 
     delete pi1;
     delete ps1;
     delete pi2;
     delete ps2;
-    delete pvi;
+    //delete pvi;
     delete pi3;
     delete ps3;
     delete cpi1;
@@ -106,7 +106,8 @@ void ch12_1_3()
     //当讲一个 shared_ptr绑定到一个一个普通指针，就将内存的管理交给了shared_ptr,
     //不该再使用内置指针访问shared_ptr指向的对象
     //也不用用get 初始化另外一个智能指针或者为智能指针赋值
-    p1.reset(new int(1024));
+    //p1.reset(new int(1024));
+    p1.reset();
 }
 
 void ch12_1_4()
@@ -141,58 +142,88 @@ void ch12_1_6()
 
 
 }
+
 void ch12_2()
 {
-    typedef int arrT[42];
-    int* pi = new arrT; //分配一个数组会得到一个元素类型的指针
-    delete []pi;  //释放动态数组
-
-    int *pi1=new int[12];//12个未初始化的int
-    int *pi2 = new int[12]();//12个初始化为0
-    for(int* p=pi2;p!=pi2+12;++p)
-    {
-        *p=5;
-        std::cout<<*p<<"\t";
-    }
-    std::cout<<std::endl;
-    std::string *ps1 = new std::string[10];//10个初始化为空string
-    std::string *ps2 = new std::string[10]();//10个空string
-
-    delete [] pi;
-    delete [] pi1;
-    delete [] pi2;
-    delete [] ps1;
-    delete []ps2;
-
-
-    //智能指针和动态数组
-    std::unique_ptr<int[]> up(new int[12]);
-    for(size_t i=0;i<12;++i)
-    {
-        up[i]=i*2;
-        std::cout<<up[i]<<"\t";
-
-    }
-    std::cout<<std::endl;
-    up.release();//delete []
-
-    std::shared_ptr<int[]> sp(new int[12](),[](int*p){delete []p;});
-    for(size_t i=0;i<12;++i)
-    {
-        *(sp.get()+i)=i*3;
-        std::cout<<(*(sp.get()+i))<<"\t";
-    }
-    std::cout<<std::endl;
+    //allocator
+    //将内存分配和对象构造组合在一起可能会导致不必要的浪费
+//    const int n=10;
+//    std::string* const p = new std::string[n];
+//    std::string s;
+//    std::string* q=p;
+//    while(std::cin>>s &&q>=p+n)
+//    {
+//        *q++=s;
+//    }
+//    auto size = q-p; //q's size
+//    std::cout<<"q's size:"<<size<<std::endl;
+//    delete [] p;
 }
 
+void ch12_2_2()
+{
+//    std::allocator<std::string> alloc;
+//    const int allocSize=10;
+//    auto const p = alloc.allocate(allocSize);
+
+//    auto q= p; //q指向最后构造的元素之后的位置
+//    alloc.construct(q++);
+//    //std::cout<<(*p).at(0)<<std::endl;
+//    alloc.construct(q++,10,'c');
+//    //std::cout<<*p<<std::endl;
+//    alloc.construct(q++,"hi"); //
+//    //std::cout<<*p<<std::endl;
+//    while(q!=p)
+//    {
+//        alloc.destroy(--q); //释放真正构造的string
+//    }
+//    //销毁元素后，可以重新使用这部分内存，来保存其它string或者还给系统
+//    alloc.deallocate(p,allocSize); //释放内存
+//    //传递给deallocate的指针不能为空，必须指向allocate分配的内存，且大小参数必须与调用allocate分配内存大小时提供的参数一致
+
+//    std::vector<int> vi={0,1,2,3,5,4,6,7,8,9};
+//    //分配比vi中元素占用空间大一倍的动态内存
+//    auto pi = alloc.allocate(vi.size()*2);
+//    //通过拷贝v1中的元素来构造从pi开始的元素
+//    auto qi= std::uninitialized_copy(vi.begin(),vi.end(),pi);
+//    //将剩余元素初始化为1024
+//    std::uninitialized_fill_n(qi,vi.size(),1024);
+
+}
+
+
+void runQueries(std::ifstream& infile)
+{
+    TextQuery tq(infile);
+    while(true)
+    {
+        std::cout<<"enter word to look for,or q to quit"<<std::endl;
+        std::string s;
+        if(!(std::cin>>s) || s=="q")
+        {
+            break;
+        }
+        print(std::cout,tq.query(s));//<<std::end;
+    }
+}
 void ch12_3()
-{}
+{
+    std::string fname="D:/in.txt";
+    std::ifstream in;//(fname,std::ios::binary);
+    in.open(fname,std::ios::in);
+    if(!in.is_open())
+    {
+        std::cout<<"fail to open "<<fname<<std::endl;
+        return;
+    }
+    runQueries(in);
+
+}
 void testCh12()
 {
     std::cout<<"Start test chapter 12"<<std::endl;
-    ch12_1_1();
-    ch12_1_2();
-    ch12_1_3();
+
     ch12_2();
+    ch12_2_2();
     ch12_3();
 }
