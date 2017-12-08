@@ -19,6 +19,13 @@ public:
     Sales_data(const std::string&s,unsigned n,double p):bookNo(s),units_sold(n),revenue(p*n){}
     Sales_data(std::istream&);
 
+    //拷贝构造函数
+    Sales_data(const Sales_data&);
+
+    //重载赋值运算符 =》 合成拷贝赋值运算符
+    Sales_data& operator=(const Sales_data& rhs);
+
+    ~Sales_data(){}
     //委托构造函数
 //    Sales_data():Sales_data("",0,0){}
 //    Sales_data(std::string &s):Sales_data(s,0,0){}
