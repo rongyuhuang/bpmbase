@@ -8,7 +8,8 @@
 #include<fstream>
 
 #include"sales_data.h"
-
+#include"message.h"
+#include"strvec.h"
 
 void fcn(std::vector<int>);//参数进行拷贝初始化
 
@@ -75,10 +76,45 @@ void ch13_1()
      * 合成的拷贝控制成员可能是删除的
     */
 }
+
+void ch13_234()
+{
+    Message m1("Hi,"),m2("C++ Primer");
+    Folder f1,f2;
+    m1.save(f1);
+    m1.save(f2);
+    m2.save(f1);
+    m1.printInfo();
+    m2.printInfo();
+    f1.printInfo();
+    f2.printInfo();
+
+}
+
+void ch13_5()
+{
+    StrVec sv;
+    sv.push_back("hi");
+    sv.push_back("c++");
+    sv.push_back("5th edit.");
+    for(const auto& s:sv)
+    {
+        std::cout<<s<<"\t";
+    }
+    std::cout<<std::endl;
+    auto beg = sv.begin();
+    while(beg !=sv.end())
+    {
+        std::cout<<*beg++<<"\t";
+    }
+    std::cout<<std::endl;
+}
 void testCh13()
 {
     std::cout<<"Start test chapter 13"<<std::endl;
     ch13_1();
+    ch13_234();
+    ch13_5();
 }
 
 void fcn(std::vector<int>vi)
