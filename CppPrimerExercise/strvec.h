@@ -15,7 +15,12 @@ public:
     StrVec& operator =(const StrVec&);
     ~StrVec();
 
+    //移动操作
+    StrVec(StrVec &&) noexcept;
+    StrVec& operator =(StrVec&&) noexcept;
+
     void push_back(const std::string& s);
+    void push_back(std::string&&);//移动版
     size_t size()const {return first_free-elements;}
     size_t capacity ()const{ return cap-elements;}
     std::string* begin()const{return elements;}

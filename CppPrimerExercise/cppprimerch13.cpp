@@ -14,21 +14,32 @@
 void fcn(std::vector<int>);//参数进行拷贝初始化
 
 class HasPtr{
+    friend void swap(HasPtr&,HasPtr&);
 public:
     HasPtr(const std::string &s=std::string()):ps(new std::string(s)),i(0){}
     ~HasPtr() {delete ps;}
     HasPtr(const HasPtr& rhs):ps(new std::string(*rhs.ps)),i(rhs.i){}
-    HasPtr& operator=(const HasPtr& rhs){
-        auto tempS = new std::string(*rhs.ps); //拷贝底层string
-        delete ps;   //释放旧内存
-        ps = tempS;  //从右侧运算对象拷贝数据到本对象
-        i = rhs.i;
-        return *this;
-    }
+//    HasPtr& operator=(const HasPtr& rhs){
+//        auto tempS = new std::string(*rhs.ps); //拷贝底层string
+//        delete ps;   //释放旧内存
+//        ps = tempS;  //从右侧运算对象拷贝数据到本对象
+//        i = rhs.i;
+//        return *this;
+//    }
+    //移动构造函数
+    HasPtr(HasPtr&& rhs)noexcept:ps(rhs.ps),i(rhs.i){rhs.ps=0;}
+
+    HasPtr& operator =(HasPtr rhs){swap(*this,rhs);return *this;}
 private:
     std::string *ps;
     int i;
 };
+void swap(HasPtr& lhs,HasPtr& rhs)
+{
+    using std::swap;
+    swap(lhs.ps,rhs.ps);
+    swap(lhs.i,rhs.i);
+}
 void ch13_1()
 {
     std::string dots(10,'.'); //直接初始化
@@ -109,12 +120,33 @@ void ch13_5()
     }
     std::cout<<std::endl;
 }
+
+void ch13_6()
+{
+    HasPtr hp("Hi"),hp2;
+    hp2 = hp; //hp是左值，hp通过拷贝构造函数来拷贝
+    hp = std::move(hp2); //移动构造函数移动hp2
+
+    StrVec sv;
+    std::string s1="some one like you";
+    sv.push_back(s1); // push_back(const std::string&)
+    sv.push_back("haha");//push_back(std::string&&)
+
+    //右值和左值引用成员函数
+    /*
+     * 1.在成员函数的参数列表后面放置一个 引用限定符/&，只能向可修改的左值赋值
+     * 2.在成员函数的参数列表后面放置一个 引用限定符/&，只能向可修改的右值赋值
+     * 3.一个函数可以同时用const和引用限定，const在引用限定前
+    */
+
+}
 void testCh13()
 {
     std::cout<<"Start test chapter 13"<<std::endl;
     ch13_1();
     ch13_234();
     ch13_5();
+    ch13_6();
 }
 
 void fcn(std::vector<int>vi)

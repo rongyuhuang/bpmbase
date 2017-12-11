@@ -1,5 +1,6 @@
 #include"strvec.h"
 #include<utility>
+#include <iterator>     // std::make_move_iterator
 std::allocator<std::string> StrVec::alloc;
 StrVec::StrVec(const StrVec & rhs)
 {
@@ -22,12 +23,37 @@ StrVec::~StrVec()
     free();
 }
 
+StrVec::StrVec( StrVec && rhs)noexcept
+    :elements(rhs.elements),first_free(rhs.first_free),cap(rhs.cap)
+{
+    rhs.elements=rhs.first_free=rhs.cap=nullptr;
+}
+
+StrVec& StrVec::operator =( StrVec&& rhs) noexcept
+{
+    if(this !=&rhs)
+    {
+        free(); //释放已有元素
+        //接管rhs元素
+        elements = rhs.elements;
+        first_free = rhs.first_free;
+        cap = rhs.cap;
+        //将rhs置于可析构状态
+        rhs.elements = rhs.first_free = rhs.cap = nullptr;
+    }
+    return *this;
+}
 void StrVec::push_back(const std::string &s)
 {
     chk_n_alloc();  //确保有空间容纳新元素
     alloc.construct(first_free++,s);
 }
 
+void StrVec::push_back(std::string && s)
+{
+    chk_n_alloc();
+    alloc.construct(first_free++,std::move(s));
+}
 std::pair<std::string*,std::string*> StrVec::alloc_n_copy(const std::string *b, const std::string *e)
 {
     auto data = alloc.allocate(e-b);
@@ -57,12 +83,18 @@ void StrVec::reallocate()
     auto elem = elements;
     for(size_t i=0;i!=size();++i)
     {
-        alloc.construct(dest++,move(*elem++));
+        alloc.construct(dest++,std::move(*elem++));
     }
+    //移动元素
+//    auto last = std::uninitialized_copy(std::make_move_iterator(begin()),
+//                                        std::make_move_iterator(end()),
+//                                        data);
     //释放旧内存
     free();
     //更新数据结构
     elements=data;
     first_free = dest;
+    //
+//    first_free = last;
     cap = elements+newCapacity;
 }

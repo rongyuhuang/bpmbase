@@ -14,6 +14,10 @@ public:
     Message(const Message&);  //拷贝构造函数
     Message& operator =(const Message&);  //拷贝赋值运算法
     ~Message();
+    //移动操作
+    Message(Message&&);
+    Message& operator =(Message&&);
+
     void save(Folder&);
     void remove(Folder&);
     void printInfo();
@@ -27,6 +31,8 @@ private:
     // used by Folder class to add self to this Message's set of Folder's
     void addFolder(Folder *f) { folders.insert(f); }
     void rmvFolder(Folder *f) { folders.erase(f); }
+
+    void moveFolders(Message*);
 };
 inline void swap(Message&,Message&);
 
