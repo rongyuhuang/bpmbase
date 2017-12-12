@@ -12,7 +12,12 @@ class StrVec
 public:
     StrVec():elements(nullptr),first_free(nullptr),cap(nullptr){}
     StrVec(const StrVec&);
+    //赋值运算符
+    StrVec& operator =(std::initializer_list<std::string>);
+
     StrVec& operator =(const StrVec&);
+    std::string& operator[](std::size_t n){return elements[n];}
+    const std::string& operator [](std::size_t n)const{return elements[n];}
     ~StrVec();
 
     //移动操作

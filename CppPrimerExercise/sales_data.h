@@ -2,6 +2,7 @@
 #define SALES_DATA_H
 
 #include<string>
+#include<iostream>
 typedef double wages;
 typedef wages base,*p;
 
@@ -10,7 +11,10 @@ class Sales_data{
     friend Sales_data add(const Sales_data&,const Sales_data&);
     friend std::ostream &print(std::ostream&,const Sales_data&);
     friend std::istream &read(std::istream&,Sales_data&);
-
+    friend std::istream& operator>>(std::istream&,Sales_data&);
+    friend std::ostream& operator<<(std::ostream&,const Sales_data&);
+    friend bool operator ==(const Sales_data&,const Sales_data&);
+    friend bool operator !=(const Sales_data&,const Sales_data&);
 public:
     //只有当类没有声明任何构造函数时，便一起才会自动的生成默认构造函数
     //如果类包含有内置类型或者复合类型的成员，只有当这些成员全都被赋予了类内的初始值时，这个类才适合于使用合成的默认构造函数Sales_data()=default;
@@ -25,6 +29,8 @@ public:
     //重载赋值运算符 =》 合成拷贝赋值运算符
     Sales_data& operator=(const Sales_data& rhs);
 
+    //复合赋值运算符
+    Sales_data& operator +=(const Sales_data&);
     ~Sales_data(){}
     //委托构造函数
 //    Sales_data():Sales_data("",0,0){}
@@ -49,4 +55,10 @@ private:
 Sales_data add(const Sales_data&,const Sales_data&);
 std::ostream &print(std::ostream&,const Sales_data&);
 std::istream &read(std::istream&,Sales_data&);
+
+std::istream& operator>>(std::istream&,Sales_data&);
+std::ostream& operator<<(std::ostream&,const Sales_data&);
+bool operator ==(const Sales_data&,const Sales_data&);
+bool operator != (const Sales_data&,const Sales_data&);
+
 #endif // SALES_DATA_H
