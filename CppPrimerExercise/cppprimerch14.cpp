@@ -190,8 +190,62 @@ void ch14_8()
     std::cout<<intops["%"](a,b)<<std::endl;
 }
 
+class SmallInt{
+    friend SmallInt operator +(const SmallInt&,const SmallInt&);
+public:
+    SmallInt(int i=0):val(i)
+    {
+        if(i<0||i>255)
+        {
+            throw std::out_of_range("Bad SmallInt value");
+        }
+    }
+    //类型转换运算符
+    explicit operator int()const {return val;}
+    //显式的类型转换符，编译不会将一个显式的类型转换符用于隐式类型转换
+
+private:
+    std::size_t val;
+};
+
+SmallInt operator +(const SmallInt& lhs,const SmallInt& rhs)
+{
+    return SmallInt(lhs.val+rhs.val);
+}
 void ch14_9()
 {
+    /*类型转换运算符
+     * 1.类型转换运算符是一种特殊的成员函数，负责将一个类类型的值转换为其他类型
+     * 2.他不能声明返回类型，形参列表必须为空，类型转换函数通常为const
+     * 3.如果表达式被用作条件时，显示的类型转化将被隐式的执行
+     * 4.IO库定义一个向bool显式类型转换符
+    */
+    SmallInt si1;
+    si1 =3; //3隐式转化为SmallInt，再调用 SmallInt::operator=
+    //    std::cout<<si1<<std::endl;
+    //    si1 = si1+4;
+    //    std::cout<<si1<<std::endl;
+    //加上explicit
+    std::cout<<static_cast<int>(si1)<<std::endl;
+    si1 = static_cast<int>(si1)+4;
+    std::cout<<static_cast<int>(si1)<<std::endl;
+
+    /*避免有二义性的类型转换，以下两种情况可能产生多重转换路径
+     * 1.两个类提供相同的类型转换
+     * 2.类定义了多个转换规则，但这些转换涉及的类类型本身可以通过其他类型联系在一起，最典型的是算术运算符
+     * 对于给定的类来说，最好只定义最多一个与算术类型有关的转换规则
+     * 3.如果在调用重载函数时我们需要使用构造函数或强制类型转换来改变实参的类型时，这意味着程序设计不足
+     *
+    */
+
+    /*函数匹配与重载运算符
+     * 1.表达式中运算符的候选函数集既应包含成员函数，也应该包括非成员函数
+     * 2.如果一个类及提供了转换目标是算数类型的类型转换，也提供了重载的运算符，则将会遇到重载运算符与内置运算符的二义性问题
+    */
+    SmallInt si2(3);
+    SmallInt si3 = si1+si2; // 使用重载的operator+
+    //int ival = si3+0; //二义性错误
+    std::cout<<static_cast<int>(si3)<<std::endl;
 
 }
 void testCh14()
@@ -201,5 +255,6 @@ void testCh14()
     //ch14_23();
     //ch14_45();
     //ch14_67();
-    ch14_8();
+    //ch14_8();
+    ch14_9();
 }
