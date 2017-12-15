@@ -64,8 +64,7 @@ protected:
 private:
     int pri_mem=2;
 public:
-
-    virtual int fcn();
+     int fcn();
 
 };
 
@@ -127,9 +126,10 @@ public:
 class DD1:public D1{
 public:
     int fcn(int); //非虚函数，隐藏了 D1的fcn(int)
-    int fcn(); //覆盖了Base的fcn()
-    void f2(); //覆盖了D1的f2
+    int fcn() ; //覆盖了Base的fcn()
+    void f2() ; //覆盖了D1的f2
 };
+
 void ch15_56()
 {
     /*受保护的成员
@@ -168,13 +168,13 @@ void ch15_56()
      *
     */
 
-    Base bobj;
-    D1 d1Obj;
-    DD1 dd1Obj;
-    Base *pb1 = &bobj,*pb2=&d1Obj,*pb3 = &dd1Obj;
-    pb1->fcn(); // 虚调用，将在运行时调用Base::fcn()
-    pb2->fcn(); // 虚调用，将在运行时调用Base::fcn()
-    pb3->fcn(); // 虚调用，将在运行时调用DD1::fcn()
+//    Base bobj;
+//    D1 d1Obj;
+//    DD1 dd1Obj;
+//    Base *pb1 = &bobj,*pb2=&d1Obj,*pb3 = &dd1Obj;
+//    pb1->fcn(); // 虚调用，将在运行时调用Base::fcn()
+//    pb2->fcn(); // 虚调用，将在运行时调用Base::fcn()
+//    pb3->fcn(); // 虚调用，将在运行时调用DD1::fcn()
 
 //    D1 *pd1=&d1Obj,*pd2=&dd1Obj;
 //    //dd1Obj.fcn()
@@ -200,10 +200,25 @@ void ch15_7()
     q1= new BulkQuote;
     delete q1; //动态调用BulkQuote的析构函数
 }
+
+void ch15_8()
+{
+    Basket b1;
+    b1.addItem(std::make_shared<Quote>("123",45));
+    b1.addItem(std::make_shared<BulkQuote>("334",12,4,0.2));
+    b1.totalReceipt(std::cout);
+
+    Quote q1("123",45);
+    b1.addItem(q1);
+    BulkQuote bq1("1112",23,34,0.5);
+    b1.addItem(std::move(bq1));
+    b1.totalReceipt(std::cout);
+}
 void testCh15()
 {
     std::cout<<"Start to test chapter 15"<<std::endl;
 //    ch15_12();
 //    ch15_34();
-    ch15_56();
+    //ch15_56();
+    ch15_8();
 }

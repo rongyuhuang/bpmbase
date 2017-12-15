@@ -2,6 +2,8 @@
 #define QUOTE_H
 #include<iostream>
 #include<string>
+#include<memory>
+#include<set>
 
 class Quote{
 public:
@@ -16,6 +18,9 @@ public:
 
     std::string isbn()const{return bookNo;}
     virtual double net_price(std::size_t n)const{return n*price;}
+
+    virtual Quote* clone()const&{return new Quote(*this);}
+    virtual Quote* clone()const &&{return new Quote(std::move(*this));}
 private:
     std::string bookNo;
 protected:
@@ -52,11 +57,37 @@ public :
     BulkQuote(std::string& id,double sales_price,std::size_t n,double dis):
         QuoteDisc(id,sales_price,n,dis){}
     double net_price(size_t n) const override;
-
+    BulkQuote* clone()const &{return new BulkQuote(*this);}
+    BulkQuote* clone() const &&{return new BulkQuote(std::move(*this));}
 private:
     std::size_t minQty=0;
     double discount=0.0;
 };
 
 double print_total(std::ostream&,const Quote&,std::size_t);
+
+class Basket{
+public:
+    void addItem(const std::shared_ptr<Quote>& sale)
+    {
+        items.insert(sale);
+    }
+
+    void addItem(const Quote& sale)
+    {
+        items.insert(std::shared_ptr<Quote>(sale.clone()));
+    }
+    void addItem(Quote&& sale)
+    {
+        items.insert(std::shared_ptr<Quote>(std::move(sale).clone()));
+    }
+    double totalReceipt(std::ostream& os)const;
+
+private:
+    static bool compare(const std::shared_ptr<Quote>& lhs,const std::shared_ptr<Quote>& rhs)
+    {
+        return lhs->isbn() < rhs->isbn();
+    }
+    std::multiset<std::shared_ptr<Quote>,decltype(compare)*> items{compare};
+};
 #endif // QUOTE_H
