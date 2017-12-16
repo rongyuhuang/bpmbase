@@ -6,6 +6,7 @@
 #include<memory>
 
 #include"quote.h"
+#include"wordquery.h"
 
 void ch15_12()
 {
@@ -214,6 +215,27 @@ void ch15_8()
     b1.addItem(std::move(bq1));
     b1.totalReceipt(std::cout);
 }
+
+void ch15_9()
+{
+//    std::string fname="D:/in.txt";
+//    std::ifstream in;
+//    in.open(fname,std::ios::in);
+//    if(!in.is_open())
+//    {
+//        std::cout<<"fail to open "<<fname<<std::endl;
+//        return;
+//    }
+//    TextQuery text(in);
+//    in.close();
+//    std::string sought;
+//    while (std::cin>>sought) {
+//        Query q(sought);
+//        auto result = q.eval(text);
+//        print(std::cout,result)<<std::endl;
+//    }
+}
+
 void testCh15()
 {
     std::cout<<"Start to test chapter 15"<<std::endl;
