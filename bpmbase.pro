@@ -7,4 +7,5 @@ SUBDIRS = \
     imgui_demo \
     utils_test \
     qtbinpatcher \
-    CppPrimerExercise
+    CppPrimerExercise \
+    InDepthCpp11
