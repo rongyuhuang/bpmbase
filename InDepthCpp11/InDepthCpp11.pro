@@ -7,3 +7,6 @@ SOURCES += main.cpp\
     ch1.cpp
 
 include(../msvc.pri)
+
+HEADERS += \
+    iteratorimp.h
