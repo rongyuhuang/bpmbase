@@ -6,7 +6,7 @@
 #include<map>
 #include<memory>
 #include<algorithm> //for std::for_each
-
+#include<tuple>
 #include"iteratorimp.h"
 
 class Foo{
@@ -264,6 +264,159 @@ void ch1_4()
     }
     std::cout<<std::endl;
 }
+
+void func5()
+{
+    std::cout<<__FUNCTION__<<std::endl;
+}
+
+class Foo5{
+public:
+    static int foo_func(int a)
+    {
+        std::cout<<__FUNCTION__<<"("<<a<<")"<<std::endl;
+        return a;
+    }
+};
+
+class Bar5{
+public:
+    int operator()(int a)
+    {
+        std::cout<<__FUNCTION__<<"("<<a<<")"<<std::endl;
+        return a;
+    }
+};
+
+class A5{
+private:
+    std::function<void()> callback_;
+
+public:
+    A5(const std::function<void()>& f):
+        callback_(f){}
+    void notify(void)
+    {
+        callback_();
+    }
+};
+
+class Foo5_1{
+public:
+    void operator()(void)
+    {
+        std::cout<<__FUNCTION__<<std::endl;
+    }
+};
+
+void call_when_even(int x,const std::function<void(int)>& f)
+{
+    if(!(x&1))
+    {
+        f(x);
+    }
+}
+
+void output(int x)
+{
+    std::cout<<x<<" ";
+}
+
+void ch1_5()
+{
+    /*std::function和bind绑定器
+     * 1.可调用对象
+     * 1）函数指针
+     * 2）具有operator()成员函数的类
+     * 3）可被转换为函数指针的类对象
+     * 4）类成员(函数)的指针
+    */
+    //std::function的基本用法
+    std::function<void(void)> fr1 =func5;  //绑定一个普通函数
+    fr1();
+    std::function<int(int)> fr2 = Foo5::foo_func; //绑定一个类的静态函数
+    std::cout<<fr2(123)<<std::endl;
+
+    Bar5 bar;
+    fr2 = bar;  //绑定一个仿函数
+    std::cout<<fr2(45)<<std::endl;
+
+    //std::fuction作为回调函数
+    Foo5_1 foo5;
+    A5 a5(foo5);
+    a5.notify();
+
+    //std::function作为函数入参
+    for(int i =0;i<10;i++)
+    {
+        call_when_even(i,output);
+    }
+    std::cout<<std::endl;
+
+    /*std::bind将可调用对象与其参数一起进行绑定，绑定后的结果可以用std::function保存，并延迟调用到任何我们需要的时候
+     * 1.将可调用对象与其参数仪器绑定成一个仿函数
+     * 2.将多元可调用对象转成一元或者(n-1)元调用对象，即只绑定部分参数
+     *
+    */
+
+    auto fr3 = std::bind(output,std::placeholders::_1);
+    for(int i=10;i<25;++i)
+    {
+        call_when_even(i,fr3);
+    }
+}
+
+class A6{
+public:
+    int i_=0;
+
+    void func(int x,int y)
+    {
+        //auto x1 = []{return i_;}; //没有捕获外部变量i_
+        auto x2 = [=]{return i_+x+y;}; //
+        std::cout<<x2()<<std::endl;
+        auto x3 = [&]{return i_+x+y;};
+        std::cout<<x3()<<std::endl;
+        auto x4 = [this]{return i_;}; //捕获this指针
+        std::cout<<x4()<<std::endl;
+        //auto x5= [this]{return i_+x+y;}; //没有捕获 x,y
+        auto x6 = [this,x,y]{return i_+x+y;};
+        std::cout<<x6()<<std::endl;
+        auto x7 = [this]{return i_++;};
+        std::cout<<x7()<<std::endl;
+    }
+};
+
+void ch1_6()
+{
+    A6 a6;
+    a6.func(1,2);
+}
+
+void ch1_7()
+{
+    std::tuple<const char*,int> tp = std::make_tuple("sendPack",12);
+
+    int x=1,y=2;
+    std::string s="Hello";
+    auto tp1 = std::tie(x,y,s);
+    //获取元组
+    //std::cout<<tp1.get<1>()<<"\t"<<tp1.get<0>()<<std::endl;
+    int x1,y1;
+    std::string s1;
+    std::tie(x1,y1,s1) = tp1;
+    std::cout<<x1<<"\t"<<y1<<"\t"<<s1<<std::endl;
+    //只解第三个
+    std::tie(std::ignore,std::ignore,s1)=tp1;
+
+    //创建右值的引用元组
+    std::map<int,std::string> m;
+    m.emplace(std::piecewise_construct,std::forward_as_tuple(10),
+              std::forward_as_tuple(20,'a'));
+}
+
+void ch1_8()
+{}
 void testCh1()
 {
     std::cout<<"Start test chapter 1"<<std::endl;
@@ -271,4 +424,7 @@ void testCh1()
     ch1_2();
     ch1_3();
     ch1_4();
+    ch1_5();
+    ch1_6();
+    ch1_7();
 }
