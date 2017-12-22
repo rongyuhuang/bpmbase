@@ -4,7 +4,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp\
-    ch1.cpp
+    ch1.cpp \
+    ch4.cpp
 
 include(../msvc.pri)
 
