@@ -6,7 +6,8 @@ CONFIG -= qt
 SOURCES += main.cpp\
     ch1.cpp \
     ch4.cpp \
-    ch5.cpp
+    ch5.cpp \
+    ch6.cpp
 
 include(../msvc.pri)
 
