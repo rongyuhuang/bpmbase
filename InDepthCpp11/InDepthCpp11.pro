@@ -8,10 +8,15 @@ SOURCES += main.cpp\
     ch4.cpp \
     ch5.cpp \
     ch6.cpp \
-    ch9.cpp
+    ch9.cpp \
+    ch16.cpp
 
 include(../msvc.pri)
-
+include(../myboost.pri)
 HEADERS += \
     iteratorimp.h \
-    syncqueue.h
+    syncqueue.h \
+    server.h \
+    message.h \
+    rwhandler.h \
+    connector.h
