@@ -8,4 +8,5 @@ SUBDIRS = \
     utils_test \
     qtbinpatcher \
     CppPrimerExercise \
-    InDepthCpp11
+    InDepthCpp11 \
+    ctptest
