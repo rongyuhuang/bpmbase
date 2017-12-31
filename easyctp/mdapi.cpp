@@ -66,6 +66,7 @@ int __cdecl md_start()
     g_mdSm.start();
     if(checkStatus())
     {
+        g_mdSm.sync_status=0;
         return STATUS_OK;
     }
     return STATUS_TIMEOUT;
@@ -85,9 +86,14 @@ int __cdecl md_subscribe(const char* instrument)
     {
         return STATUS_STOPPED;
     }
+    if(g_mdSm.sync_status>0)
+    {
+        return STATUS_BUSY;
+    }
     g_mdSm.subscribe(instrument);
     if(checkStatus())
     {
+        g_mdSm.sync_status=0;
         return STATUS_OK;
     }
     return STATUS_TIMEOUT;
