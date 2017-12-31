@@ -11,4 +11,5 @@ HEADERS +=\
     $$EASYCTP_DIR/ctputils.h \
     $$EASYCTP_DIR/mdsm.h \
     $$EASYCTP_DIR/easyctp.h \
-    $$EASYCTP_DIR/tdsm.h
+    $$EASYCTP_DIR/tdsm.h \
+    $$EASYCTP_DIR/ctpstruct.h

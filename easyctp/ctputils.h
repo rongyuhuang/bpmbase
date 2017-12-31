@@ -4,6 +4,13 @@
 #include <iostream>
 #include<string>
 
+#include"ThostFtdcUserApiStruct.h"
+namespace CtpUtils {
+
+
 const std::string Tick2Str();
 
 void Str2Tick(const std::string tickLine);
+
+bool isErrorRsp(CThostFtdcRspInfoField* rspInfo,int reqID);
+}
