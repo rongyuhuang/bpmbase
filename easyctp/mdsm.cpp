@@ -5,7 +5,7 @@
 #include"utils/logging.h"
 #include"utils/timeutil.h"
 #include"ctputils.h"
-
+#include<fmt/format.h>
 MdSm::MdSm()
 {
     tpLastCheck = std::chrono::system_clock::now();
@@ -146,14 +146,6 @@ void MdSm:: OnFrontConnected()
 {
     LOG(INFO)<<__FUNCTION__;
     login();
-    //断线重连后，需要重新订阅合约池
-    if(subPool.size()>0)
-    {
-        for(auto x:subPool)
-        {
-            subscribe(x.c_str());
-        }
-    }
 }
 
 ///当客户端与交易后台通信连接断开时，该方法被调用。当发生这个情况后，API会自动重新连接，客户端可不做处理。
@@ -178,8 +170,17 @@ void MdSm:: OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtd
 {
     if(bIsLast && !CtpUtils::isErrorRsp(pRspInfo,nRequestID))
     {
-        sync_status=2;
+        //sync_status=2;
+        sync_status= 0;
         LOG(INFO)<<__FUNCTION__;
+        //断线重连后，需要重新订阅合约池
+        if(subPool.size()>0)
+        {
+            for(auto x:subPool)
+            {
+                subscribe(x.c_str());
+            }
+        }
     }
 }
 
@@ -241,7 +242,7 @@ void MdSm:: OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketDat
     strncpy(tick->symbol,pDepthMarketData->InstrumentID,sizeof(tick->symbol)-1);
     char buff_time[32];
     sprintf(buff_time,"%s %s",pDepthMarketData->ActionDay,pDepthMarketData->UpdateTime);
-    char fmt[]="%Y%m%d %H%M%S";
+    char fmt[]="%Y%m%d %H:%M:%S";
     tick->actionDatetime =bpm_str2ctime(buff_time,fmt);
     tick->updateMS = pDepthMarketData->UpdateMillisec;
     tick->lastPrice = pDepthMarketData->LastPrice;
@@ -265,7 +266,12 @@ void MdSm:: OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketDat
     tick->upperLimitPrice = pDepthMarketData->UpperLimitPrice;
     tick->lowerLimitPrice = pDepthMarketData->LowerLimitPrice;
 
-    //rudui
+//    auto tickLine =fmt::format("{} {} {}/{} {}/{} {}/{}",tick->symbol,tick->actionDatetime,
+//                               tick->lastPrice,tick->totalVolume,tick->bid1Price,tick->ask1Volume,
+//                               tick->ask1Price,tick->ask1Volume);
+//    LOG(INFO)<<tickLine.c_str();
+    LOG(INFO)<<tick->symbol<<","<<bpm_ctime2str( tick->actionDatetime,"%Y%m%d %H:%M:%S").c_str()<<","<<tick->lastPrice;
+    //入队
     std::lock_guard<std::mutex> lock(ticks_mutex);
     ticks.push_back(buff);
     if(need_notify)

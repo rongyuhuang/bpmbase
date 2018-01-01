@@ -3,6 +3,7 @@
 #include"mdsm.h"
 #include"easyctp.h"
 #include"utils/fileutil.h"
+#include"utils/strutil.h"
 #include"utils/logging.h"
 #include<thread>
 #include<chrono>
@@ -25,7 +26,7 @@ bool checkStatus()
             return true;
         }
     }
-    return true;
+    return false;
 }
 ///easyctp的MD API
 
@@ -46,7 +47,8 @@ void __cdecl md_setUserInfo(const char* userID,const char* password)
 void __cdecl md_setConfig(const char* flowPath,int apiTimeout)
 {
     LOG(INFO)<<__FUNCTION__<<",FlowPath:"<<flowPath<<",ApiTimeout:"<<apiTimeout;
-    g_mdSm.mdFlowPath = flowPath;
+    //CTP API在设置流文件夹时，目录需要后跟"/"
+    g_mdSm.mdFlowPath = StrUtil::printf("%s/",flowPath);
     bpm_createDir(flowPath);
 
     timeout = (apiTimeout>default_timeout)?apiTimeout:default_timeout;

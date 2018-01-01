@@ -10,3 +10,9 @@ include(../ctpsdk.pri)
 include(../easyctp.pri)
 include(../msvc.pri)
 include(../utils.pri)
+include(../fmt.pri)
+
+HEADERS += \
+    datareceiver.h \
+    config.h \
+    simplesyncqueue.h
