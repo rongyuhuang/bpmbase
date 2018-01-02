@@ -4,7 +4,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += static_runtime
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    datareceiver.cpp
 
 include(../ctpsdk.pri)
 include(../easyctp.pri)

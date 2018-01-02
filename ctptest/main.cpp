@@ -4,6 +4,8 @@
 #include"easyctp/easyctp.h"
 
 #include"utils/logging.h"
+#include"utils/fileutil.h"
+#include"utils/crashdump.h"
 #include<fmt/format.h>
 void test_md()
 {
@@ -49,16 +51,28 @@ void prepare_md() {
 
 int main(int argc, char *argv[])
 {
-    std::cout << "Start to test EASYCTP!" << std::endl;
-    std::cout<<fmt::format("{}@{}","easyctp","2018-01-01")<<std::endl;
+    bpm_CrashDumpInitialize();
+    FLAGS_log_dir="D:/lovelyGoogle"; //指定程序日志目录
+    bpm_createDir(FLAGS_log_dir.c_str());
+    FLAGS_alsologtostderr = true; //设置日志消息除了日志文件是否输出到标准输出
+    google::SetStderrLogging(google::GLOG_INFO); //设置日志输出最低级别
+    google::InitGoogleLogging(argv[0]);
+
+    LOG(INFO)<< "Start to test EASYCTP!";
+    //std::cout<<fmt::format("{}@{}","easyctp","2018-01-01")<<std::endl;
+    bool result =false;
+    std::cout<<"result="<<result<<",!result="<<!result<<std::endl;
 //    prepare_md();
 //    test_md();
+
     Config cfg("sim03");
     DataReceiver dr(cfg);
+//    std::thread collectThread([&dr]{dr.tickCollect();});
+//    collectThread.detach();
     dr.start();
 
-    std::thread collectThread([&dr]{dr.tickCollect();});
-    collectThread.detach();
     getchar();
+
+    google::ShutdownGoogleLogging();
     return 0;
 }

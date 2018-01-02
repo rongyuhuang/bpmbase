@@ -1,9 +1,12 @@
 #include"ctputils.h"
-
+#include"utils/timeutil.h"
+#include"utils/strutil.h"
 namespace CtpUtils {
 
-const std::string Tick2Str()
+const std::string Tick2Str(const TickData& tick)
 {
+
+    std::string tickLine=StrUtil::printf("%s");
     return nullptr;
 }
 

@@ -4,6 +4,8 @@
 #include<string>
 #include<map>
 #include<atomic>
+#include<thread>
+#include<memory>
 #include<easyctp/easyctp.h>
 
 #include"utils/logging.h"
@@ -24,73 +26,14 @@ public:
         quit=true;
         stop();
     }
-    void start()
-    {
-        md_start();
-        for(auto x:config.symbols)
-        {
-            md_subscribe(x.c_str());
-        }
-    }
-    void stop()
-    {
-        for(auto x:config.symbols)
-        {
-            md_unsubscribe(x.c_str());
-        }
-        md_stop();
-        //        for(auto x:tickMap)
-        //        {
-        //            delete x.second;
-        //        }
-        tickMap.clear();
-    }
+    void start();
 
-    void onTick(TickData* tick)
-    {
-        std::lock_guard<std::mutex> lock(tick_mutex);
-        auto iter = tickMap.find(std::string(tick->symbol));
-        if(iter !=tickMap.end())
-        {
-            LOG(INFO)<<__FUNCTION__<<iter->first;
-            //(*iter)[std::string(tick->symbol)].Put(*tick);
-        }
-    }
+    void stop();
 
-    void tickCollect()
-    {
-        LOG(INFO)<<__FUNCTION__<<" begin...";
+    void onTick(TickData* tick);
 
-        int ret = STATUS_OK;
-        RtnData data;
-        while(!quit)
-        {
-            ret = md_queryRtnData(&data);
-            if(ret== STATUS_OK)
-            {
-                CHECK(data.rtnDataType==RTNDATA_TICK);
-                TickData* tick = (TickData*)data.rtnDataPtr;
-                onTick(tick);
-                ret = md_freeMemory(tick);
-                CHECK(ret==STATUS_OK);
-                //handle tick
-            }
-            else if(ret == STATUS_QUIT)
-            {
-                LOG(INFO)<<__FUNCTION__<<",quit";
-            }
-            else if(ret ==STATUS_TIMEOUT)
-            {
-                break;
-            }
-            else
-            {break;
-            }
-        }
+    void tickCollect();
 
-
-        LOG(INFO)<<__FUNCTION__<<" end.";
-    }
 public:
     std::map<std::string,SimpleSyncQueue<TickData>> tickMap;
 
@@ -98,13 +41,8 @@ private:
     Config config;
     std::mutex tick_mutex;
     std::atomic_bool quit;
+    std::unique_ptr<std::thread> qryTickThread;
 private:
-    void initMd()
-    {
-        md_setBrokerInfo(config.brokerID.c_str(),config.mdFront.c_str());
-        md_setUserInfo(config.userID.c_str(),config.password.c_str());
-        md_setConfig("mdFlow",2000);
-
-    }
+    void initMd();
 };
 #endif // DATARECEIVER_H

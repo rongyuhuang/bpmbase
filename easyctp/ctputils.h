@@ -5,10 +5,11 @@
 #include<string>
 
 #include"ThostFtdcUserApiStruct.h"
+#include"ctpstruct.h"
 namespace CtpUtils {
 
 
-const std::string Tick2Str();
+const std::string Tick2Str(const TickData& tick);
 
 void Str2Tick(const std::string tickLine);
 
