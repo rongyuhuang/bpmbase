@@ -16,16 +16,8 @@
 class DataReceiver{
 public:
     DataReceiver();
-    DataReceiver(const Config& cfg):
-        quit(false),config(cfg)
-    {
-        initMd();
-    }
-    ~DataReceiver()
-    {
-        quit=true;
-        stop();
-    }
+    DataReceiver(const Config& cfg);
+    ~DataReceiver();
     void start();
 
     void stop();
@@ -36,6 +28,7 @@ public:
 
 public:
     std::map<std::string,SimpleSyncQueue<TickData>> tickMap;
+    std::map<std::string,std::vector<TickData>> tickCache;
 
 private:
     Config config;
@@ -45,5 +38,6 @@ private:
 private:
     void initMd();
     void saveTicks();
+    void loadTicks();
 };
 #endif // DATARECEIVER_H

@@ -1,44 +1,69 @@
 #include"datareceiver.h"
 #include<fstream>
 #include<list>
+
+DataReceiver::DataReceiver(const Config& cfg):
+   config(cfg)
+{
+    initMd();
+}
+DataReceiver::~DataReceiver()
+{
+    LOG(INFO)<<__FUNCTION__;
+    tickCache.clear();
+    tickMap.clear();
+}
+
 void DataReceiver::start()
 {
+    std::lock_guard<std::mutex> lock(tick_mutex);
+    quit=false;
     md_start();
     qryTickThread.reset(new std::thread(std::bind(&DataReceiver::tickCollect,this)));
 
 
-    for(auto x:config.symbols)
+    for(auto& x:config.symbols)
     {
-        md_subscribe(x.c_str());
+        tickCache[x] = std::vector<TickData>();
+        int ret = md_subscribe(x.c_str());
+        CHECK(ret ==STATUS_OK);
+        LOG(INFO)<<__FUNCTION__<<","<<x;
     }
 }
 
 void DataReceiver::stop()
-
 {
-    LOG(INFO)<<"DataReceiver descontruct...";
+    std::lock_guard<std::mutex> lock(tick_mutex);
+    LOG(INFO)<<__FUNCTION__;
+    quit=true;
+
+    saveTicks();
+
     for(auto x:config.symbols)
     {
         md_unsubscribe(x.c_str());
     }
-    md_stop();
+    int ret =md_stop();
+    CHECK(ret ==STATUS_OK);
     qryTickThread->join();
-    //        for(auto x:tickMap)
-    //        {
-    //            delete x.second;
-    //        }
-    tickMap.clear();
 }
 
 void DataReceiver::onTick(TickData *tick)
 {
     std::lock_guard<std::mutex> lock(tick_mutex);
-    auto iter = tickMap.find(std::string(tick->symbol));
-    if(iter !=tickMap.end())
+    if(quit)
     {
-        LOG(INFO)<<__FUNCTION__<<iter->first;
-        //(*iter)[std::string(tick->symbol)].Put(*tick);
+        return;
     }
+    auto& x = tickCache[std::string(tick->symbol)];
+    x.push_back(*tick);
+
+//    auto iter = tickMap.find(std::string(tick->symbol));
+//    if(iter !=tickMap.end())
+//    {
+//        LOG(INFO)<<__FUNCTION__<<iter->first;
+//        //(*iter)[std::string(tick->symbol)].Put(*tick);
+//    }
 }
 
 void DataReceiver::tickCollect()
@@ -50,7 +75,7 @@ void DataReceiver::tickCollect()
     int loopTime =0;
     while(!quit)
     {
-        LOG(INFO)<<__FUNCTION__<<",loop times="<<++loopTime<<",quit="<<quit;
+        //LOG(INFO)<<__FUNCTION__<<",loop times="<<++loopTime<<",quit="<<quit;
         ret = md_queryRtnData(&data);
         if(ret== STATUS_OK)
         {
@@ -89,31 +114,34 @@ void DataReceiver::initMd()
 {
     md_setBrokerInfo(config.brokerID.c_str(),config.mdFront.c_str());
     md_setUserInfo(config.userID.c_str(),config.password.c_str());
-    md_setConfig("mdFlow",2000);
+    md_setConfig("mdFlow",10000);
 }
 void DataReceiver::saveTicks()
 {
-    auto item = tickMap.cbegin();
-    while(item!=tickMap.cend())
+    LOG(INFO)<<__FUNCTION__<<"...";
+    auto begin = tickCache.cbegin();
+    while(begin !=tickCache.cend())
     {
-        auto sym = item->first.c_str();
-        auto tickQueue = (item->second);
-        std::list<TickData> ticks;
-        tickQueue.Take(ticks);
-//        (item->second).Take(ticks);
-//        std::string path = StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt", sym,
-//                                           md_getTradingDay());
-//        std::ofstream file;
-//        file.open(path,std::ios::binary|std::ios::app);
-//        if(file.is_open()==false)
-//        {
-//            continue;
-//        }
-//        for(auto tick :ticks)
-//        {
-//            file.write((char*)&tick,sizeof(TickData));
-//        }
-//        ticks.clear();
-//        file.close();
+        auto sym = begin->first.c_str();
+        auto vec = begin->second;
+        std::string path= StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt", sym,md_getTradingDay());
+        std::ofstream file;
+        file.open(path,std::ios::binary|std::ios::app);
+        if(file.is_open()==false)
+        {
+            continue;
+        }
+        for(auto & v:vec)
+        {
+            file.write((char*)&v,sizeof(TickData));
+        }
+        vec.clear();
+        file.close();
+        ++begin;
     }
+}
+
+void DataReceiver::loadTicks()
+{
+
 }

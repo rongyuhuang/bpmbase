@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     dr.start();
 
     getchar();
-
+    dr.stop();
     google::ShutdownGoogleLogging();
     return 0;
 }
