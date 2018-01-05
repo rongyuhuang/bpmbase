@@ -1,6 +1,6 @@
 #include"datareceiver.h"
-
-
+#include<fstream>
+#include<list>
 void DataReceiver::start()
 {
     md_start();
@@ -84,9 +84,36 @@ void DataReceiver::tickCollect()
 
     LOG(INFO)<<__FUNCTION__<<" end.";
 }
+
 void DataReceiver::initMd()
 {
     md_setBrokerInfo(config.brokerID.c_str(),config.mdFront.c_str());
     md_setUserInfo(config.userID.c_str(),config.password.c_str());
     md_setConfig("mdFlow",2000);
+}
+void DataReceiver::saveTicks()
+{
+    auto item = tickMap.cbegin();
+    while(item!=tickMap.cend())
+    {
+        auto sym = item->first.c_str();
+        auto tickQueue = (item->second);
+        std::list<TickData> ticks;
+        tickQueue.Take(ticks);
+//        (item->second).Take(ticks);
+//        std::string path = StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt", sym,
+//                                           md_getTradingDay());
+//        std::ofstream file;
+//        file.open(path,std::ios::binary|std::ios::app);
+//        if(file.is_open()==false)
+//        {
+//            continue;
+//        }
+//        for(auto tick :ticks)
+//        {
+//            file.write((char*)&tick,sizeof(TickData));
+//        }
+//        ticks.clear();
+//        file.close();
+    }
 }

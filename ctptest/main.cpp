@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
     google::InitGoogleLogging(argv[0]);
 
     LOG(INFO)<< "Start to test EASYCTP!";
-    //std::cout<<fmt::format("{}@{}","easyctp","2018-01-01")<<std::endl;
     bool result =false;
     std::cout<<"result="<<result<<",!result="<<!result<<std::endl;
 //    prepare_md();

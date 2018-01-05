@@ -44,5 +44,6 @@ private:
     std::unique_ptr<std::thread> qryTickThread;
 private:
     void initMd();
+    void saveTicks();
 };
 #endif // DATARECEIVER_H

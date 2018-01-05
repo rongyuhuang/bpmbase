@@ -18,6 +18,13 @@ public:
         m_notEmpty.notify_one();
     }
 
+    void Take(std::list<T>& list)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_notEmpty.wait(lock,[this]{return m_queue.empty();});
+        list = std::move(m_queue);
+        //m_notFull.notify_one();
+    }
     void Take(T& x)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
