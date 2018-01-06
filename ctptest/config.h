@@ -11,7 +11,8 @@
 #include<fstream>
 class Config{
 public:
-    std::string brokerID,mdFront,userID,password;
+    std::string mdBrokerID,mdFront,mdUserID,mdPassword;
+    std::string tdBrokerID,tdFront,tdUserID,tdPassword;
     std::vector<std::string> symbols;
     std::string brokerName;
 public:
@@ -44,12 +45,19 @@ private:
         typedef INI<> ini;
         ini cfg(cfgFile,true);
         cfg.select("MD");
-        brokerID = cfg.get("BrokerID","9999");
+        mdBrokerID = cfg.get("BrokerID","9999");
         mdFront = cfg.get("MdFront","tcp://180.168.146.187:10031");
-        userID = cfg.get("UserID","038262");
-        password = cfg.get("Password","000000");
+        mdUserID = cfg.get("UserID","038262");
+        mdPassword = cfg.get("Password","000000");
         std::string s = cfg.get("Symbols","i1805");
         symbols = StrUtil::split(s,";");
+
+        cfg.select("TD");
+        tdBrokerID = cfg.get("BrokerID","9999");
+        tdFront = cfg.get("TdFront","tcp://180.168.146.187:10030");
+        tdUserID = cfg.get("UserID","038262");
+        tdPassword = cfg.get("Password","00000");
+
     }
 };
 #endif // CONFIG_H

@@ -10,8 +10,8 @@
 
 static MdSm g_mdSm;
 
-int timeout=10000;
-int default_timeout = 10000;
+static int timeout=10000;
+static int default_timeout = 10000;
 
 
 bool checkStatus()

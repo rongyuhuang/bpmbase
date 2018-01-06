@@ -112,8 +112,8 @@ void DataReceiver::tickCollect()
 
 void DataReceiver::initMd()
 {
-    md_setBrokerInfo(config.brokerID.c_str(),config.mdFront.c_str());
-    md_setUserInfo(config.userID.c_str(),config.password.c_str());
+    md_setBrokerInfo(config.mdBrokerID.c_str(),config.mdFront.c_str());
+    md_setUserInfo(config.mdUserID.c_str(),config.mdPassword.c_str());
     md_setConfig("mdFlow",10000);
 }
 void DataReceiver::saveTicks()

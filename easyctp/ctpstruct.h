@@ -10,11 +10,39 @@
 #define STR_LEN_BIG 64   //长字符串
 #define STR_LEN_SMALL 16 //短字符串
 
+//品种类别
+#define PRODUCT_CLASS_FUTURES '1'
+#define PRODUCT_CLASS_OPTIONS '2' //期货期权
+#define PRODUCT_CLASS_COMBINATION '3' //组合
+#define PRODUCT_CLASS_SPOT '4' //即期
+#define PRODUCT_CLASS_EFP '5' //期转现
+#define PRODUCT_CLASS_SPOTOPTION '6' //现货期权
 
+//组合类别
+#define COMBINE_BUL '1' //垂直价差BUL
+#define COMBINE_BER '2' //垂直价差BER
+#define COMBINE_STD '3' //跨式组合
+#define COMBINE_STG '4' //宽跨式组合
+#define COMBINE_PRT '5' //备兑组合
+#define COMBINE_CLD '6' //时间价差组合
 
 ////结构体定义
 
+struct InstrumentInfo{
+    char symbol[STR_LEN_SMALL];
+    char name[STR_LEN_SMALL];
+    char product[STR_LEN_SMALL];
+    char exchange[STR_LEN_SMALL];
+    char productClass;
+    int volumeMultiple; //合约乘数
+    double priceTick; //最小变动价位
+    int maxLimitOrder; //限价单最大下单量
+    int minLimitOrder; //
+    int maxMarketOrder;
+    int minMarketOrder;
+    char combineType; //组合类型
 
+};
 struct TickData{
     char symbol[STR_LEN_SMALL];
     long long actionDatetime;

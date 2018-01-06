@@ -41,7 +41,7 @@ EASYCTP_API int __cdecl td_queryAccount();
 EASYCTP_API int __cdecl td_queryPosition();
 EASYCTP_API int __cdecl td_queryOrder();
 EASYCTP_API int __cdecl td_queryTrade();
-
+EASYCTP_API int __cdecl td_queryMarketData();
 //td 交易相关
 EASYCTP_API int __cdecl td_placeOrder();
 EASYCTP_API int __cdecl td_cancelOrder();

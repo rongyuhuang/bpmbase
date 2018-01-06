@@ -47,6 +47,19 @@ void prepare_md() {
   md_setConfig("mdflow",100);
 }
 
+void test_td()
+{
+    td_start();
+    int ret =td_queryMarketData();
+    LOG(INFO)<<"td_queryMarketData()="<<ret;
+    td_stop();
+}
+void prepare_td()
+{
+    td_setBrokerInfo("9999","tcp://180.168.146.187:10030");
+    td_setUserInfo("038262","qaz75369");
+    td_setConfig("tdFlow",20000,1,10);
+}
 #include"datareceiver.h"
 
 int main(int argc, char *argv[])
@@ -64,14 +77,16 @@ int main(int argc, char *argv[])
 //    prepare_md();
 //    test_md();
 
-    Config cfg("sim03");
-    DataReceiver dr(cfg);
-//    std::thread collectThread([&dr]{dr.tickCollect();});
-//    collectThread.detach();
-    dr.start();
+    prepare_td();
+    test_td();
+//    Config cfg("sim03");
+//    DataReceiver dr(cfg);
+////    std::thread collectThread([&dr]{dr.tickCollect();});
+////    collectThread.detach();
+//    dr.start();
 
-    getchar();
-    dr.stop();
+//    getchar();
+//    dr.stop();
     google::ShutdownGoogleLogging();
     return 0;
 }
