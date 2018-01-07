@@ -1,11 +1,30 @@
 #include"datareceiver.h"
 #include<fstream>
 #include<list>
+#include <iostream>
+#include<thread>
+#include<chrono>
+#include<iomanip>
+#include<ctime>
+#include<map>
+#include<string>
+#include<vector>
+#include<functional>
+#include<algorithm>
+
+#include"easyctp/easyctp.h"
+#include"easyctp/ctputils.h"
+#include"utils/logging.h"
+#include"utils/fileutil.h"
+#include"utils/crashdump.h"
+#include"utils/timeutil.h"
+#include<fmt/format.h>
 
 DataReceiver::DataReceiver(const Config& cfg):
    config(cfg)
 {
-    initMd();
+    prepareMd();
+    prepareTd();
 }
 DataReceiver::~DataReceiver()
 {
@@ -17,12 +36,13 @@ DataReceiver::~DataReceiver()
 void DataReceiver::start()
 {
     std::lock_guard<std::mutex> lock(tick_mutex);
+    initSubscribePool();
     quit=false;
     md_start();
     qryTickThread.reset(new std::thread(std::bind(&DataReceiver::tickCollect,this)));
 
 
-    for(auto& x:config.symbols)
+    for(auto x:subscribePool)
     {
         tickCache[x] = std::vector<TickData>();
         int ret = md_subscribe(x.c_str());
@@ -39,7 +59,7 @@ void DataReceiver::stop()
 
     saveTicks();
 
-    for(auto x:config.symbols)
+    for(auto x:subscribePool)
     {
         md_unsubscribe(x.c_str());
     }
@@ -57,13 +77,6 @@ void DataReceiver::onTick(TickData *tick)
     }
     auto& x = tickCache[std::string(tick->symbol)];
     x.push_back(*tick);
-
-//    auto iter = tickMap.find(std::string(tick->symbol));
-//    if(iter !=tickMap.end())
-//    {
-//        LOG(INFO)<<__FUNCTION__<<iter->first;
-//        //(*iter)[std::string(tick->symbol)].Put(*tick);
-//    }
 }
 
 void DataReceiver::tickCollect()
@@ -72,10 +85,8 @@ void DataReceiver::tickCollect()
 
     int ret = STATUS_OK;
     RtnData data;
-    int loopTime =0;
     while(!quit)
     {
-        //LOG(INFO)<<__FUNCTION__<<",loop times="<<++loopTime<<",quit="<<quit;
         ret = md_queryRtnData(&data);
         if(ret== STATUS_OK)
         {
@@ -90,7 +101,6 @@ void DataReceiver::tickCollect()
                 onTick(tick);
                 ret = md_freeMemory(tick);
                 CHECK(ret==STATUS_OK);
-                //handle tick
             }
         }
         else if(ret == STATUS_QUIT)
@@ -110,11 +120,76 @@ void DataReceiver::tickCollect()
     LOG(INFO)<<__FUNCTION__<<" end.";
 }
 
-void DataReceiver::initMd()
+void DataReceiver::prepareMd()
 {
     md_setBrokerInfo(config.mdBrokerID.c_str(),config.mdFront.c_str());
     md_setUserInfo(config.mdUserID.c_str(),config.mdPassword.c_str());
     md_setConfig("mdFlow",10000);
+}
+void DataReceiver::prepareTd()
+{
+    td_setBrokerInfo(config.tdBrokerID.c_str(),config.tdFront.c_str());
+    td_setUserInfo(config.tdUserID.c_str(),config.tdPassword.c_str());
+    td_setConfig("tdFlow",20000,1,6);
+}
+
+void DataReceiver::initSubscribePool()
+{
+    td_start();
+    TickData* mdSnap=nullptr;
+    int count=0;
+    int ret =td_queryMarketData(&mdSnap,&count);
+    //LOG(INFO)<<fmt::format("td_queryMarketData()={},count={}",ret,count);
+    std::map<std::string,std::vector<TickData>> prodOiMap;
+
+    for(int i = 0;i<count;++i)
+    {
+        char prod[3];
+        //LOG(INFO)<<fmt::format("{} Volume={} , OI={}", mdSnap[i].symbol, mdSnap[i].totalVolume, mdSnap[i].openInterest);
+        CtpUtils::instrument2product(mdSnap[i].symbol,prod);
+        std::string productID = std::string(prod);
+        if(std::find(config.symbols.cbegin(),config.symbols.cend(),productID)
+                ==config.symbols.cend())
+        {
+            continue;
+        }
+        auto iter = prodOiMap.find(productID);
+        if(iter==prodOiMap.end())
+        {
+           prodOiMap[productID] = std::vector<TickData>{mdSnap[i]};
+        }
+        else
+        {
+            prodOiMap[productID].push_back(mdSnap[i]);
+        }
+        memset(prod,0,sizeof(prod)/sizeof(char));
+    }
+    std::map<std::string,double> prodWeight;
+    auto begin = prodOiMap.cbegin();
+    while(begin!=prodOiMap.cend())
+    {
+        //LOG(INFO)<<fmt::format("{} has {} contracts",begin->first,begin->second.size());
+        int sumOi = 0;
+        auto iter = begin->second.cbegin();
+        while(iter != begin->second.cend())
+        {
+            subscribePool.push_back(std::string((*iter).symbol));
+            sumOi+= (*iter).openInterest;
+            ++iter;
+        }
+        iter = begin->second.cbegin();
+        while(iter != begin->second.cend())
+        {
+            double weight = (*iter).openInterest == 0 ? 0:(*iter).openInterest/(double)sumOi;
+            prodWeight[std::string((*iter).symbol)]= weight;
+            instrumentWeight[std::string((*iter).symbol)] =weight;
+            std::cout<<(*iter).symbol<<" weight="<<prodWeight[std::string((*iter).symbol)]<<std::endl;
+            ++iter;
+        }
+        ++begin;
+    }
+
+    td_stop();
 }
 void DataReceiver::saveTicks()
 {

@@ -97,7 +97,7 @@ static bool checkStatus()
      return STATUS_OK;
  }
 
- int __cdecl td_queryMarketData()
+ int __cdecl td_queryMarketData(TickData** marketSnap,int* count)
  {
      if(!g_tdSm.started)
      {
@@ -108,8 +108,28 @@ static bool checkStatus()
          return STATUS_BUSY;
      }
      g_tdSm.queryMarketData();
-
-     return STATUS_OK;
+     if(checkStatus())
+     {
+        std::lock_guard<std::mutex> lock(g_tdSm.qryMutex);
+        *count = g_tdSm.mdSnap.size();
+        if(*count ==0)
+        {
+            g_tdSm.sync_status =0;
+            return STATUS_OK;
+        }
+        void* buf = malloc(*count * sizeof(TickData)+4);
+        *(int*)buf = 0xabcd; //magic?
+        *marketSnap = (TickData*)((char*)buf+4);
+        int idx=0;
+        for(auto tick:g_tdSm.mdSnap)
+        {
+            memcpy(&(*marketSnap)[idx],tick,sizeof(TickData));
+            idx++;
+        }
+        g_tdSm.sync_status =0;
+         return STATUS_OK;
+     }
+     return STATUS_TIMEOUT;
  }
 //td 交易相关
  int __cdecl td_placeOrder()

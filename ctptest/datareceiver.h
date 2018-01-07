@@ -3,6 +3,7 @@
 
 #include<string>
 #include<map>
+#include<vector>
 #include<atomic>
 #include<thread>
 #include<memory>
@@ -32,11 +33,15 @@ public:
 
 private:
     Config config;
+    std::map<std::string,double> instrumentWeight;
+    std::vector<std::string> subscribePool;
     std::mutex tick_mutex;
     std::atomic_bool quit;
     std::unique_ptr<std::thread> qryTickThread;
 private:
-    void initMd();
+    void prepareMd();
+    void prepareTd();
+    void initSubscribePool();
     void saveTicks();
     void loadTicks();
 };

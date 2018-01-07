@@ -2,6 +2,9 @@
 #include"tdsm.h"
 #include"ctputils.h"
 #include<utils/logging.h>
+
+#include<fmt/format.h>
+
 TdSm::TdSm()
 {
     tpLastChecker = std::chrono::system_clock::now();
@@ -61,7 +64,15 @@ void TdSm::queryMarketData()
     CHECK(started);
     CHECK(sync_status==0);
     sync_status=1;
-
+    {
+        //清理原有数据
+        std::lock_guard<std::mutex> lock(qryMutex);
+        for(auto x:mdSnap)
+        {
+            free(x);
+        }
+        mdSnap.clear();
+    }
     CThostFtdcQryDepthMarketDataField req;
     memset(&req,0,sizeof(req));
     flowControl();
@@ -173,7 +184,7 @@ void TdSm::OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin, CThostFtdc
     {
         if(CtpUtils::isErrorRsp(pRspInfo,nRequestID))
         {
-
+            LOG(INFO)<<__FUNCTION__<<" fail:"<<pRspInfo->ErrorMsg;
         }
         else
         {
@@ -209,6 +220,7 @@ void TdSm::OnRspQueryMaxOrderVolume(CThostFtdcQueryMaxOrderVolumeField *pQueryMa
 ///投资者结算结果确认响应
 void TdSm::OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
+    LOG(INFO)<<fmt::format("{} {} {}",pSettlementInfoConfirm->InvestorID,pSettlementInfoConfirm->ConfirmDate,pRspInfo->ErrorID);
     if(bIsLast && !CtpUtils::isErrorRsp(pRspInfo,nRequestID))
     {
         LOG(INFO)<<__FUNCTION__;
@@ -285,13 +297,47 @@ void TdSm::OnRspQryInstrument(CThostFtdcInstrumentField *pInstrument, CThostFtdc
 ///请求查询行情响应
 void TdSm::OnRspQryDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketData, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
+
     if(CtpUtils::isErrorRsp(pRspInfo,nRequestID))
     {
         LOG(ERROR)<<__FUNCTION__<<","<<pRspInfo->ErrorID;
     }
     else
     {
-        LOG(INFO)<<__FUNCTION__<<","<<pDepthMarketData->InstrumentID<<","<<pDepthMarketData->LastPrice;
+        if(pDepthMarketData)
+        {
+            TickData* tick = (TickData*)malloc(sizeof(TickData));
+            memset(tick,0,sizeof(tick));
+
+            strncpy(tick->symbol,pDepthMarketData->InstrumentID,sizeof(tick->symbol)-1);
+
+            tick->lastPrice = pDepthMarketData->LastPrice;
+            tick->totalVolume = pDepthMarketData->Volume;
+            tick->ask1Price = pDepthMarketData->AskPrice1;
+            tick->ask1Volume = pDepthMarketData->AskVolume1;
+            tick->bid1Price = pDepthMarketData->BidPrice1;
+            tick->bid1Volume = pDepthMarketData->BidVolume1;
+
+            tick->closePrice = pDepthMarketData->ClosePrice;
+            tick->highPrice = pDepthMarketData->HighestPrice;
+            tick->lowPrice = pDepthMarketData->LowestPrice;
+            tick->openPrice = pDepthMarketData->OpenPrice;
+            tick->settlePrice = pDepthMarketData->SettlementPrice;
+
+            tick->upperLimitPrice = pDepthMarketData->UpperLimitPrice;
+            tick->lowerLimitPrice = pDepthMarketData->LowerLimitPrice;
+
+            tick->openInterest = pDepthMarketData->OpenInterest;
+
+            std::lock_guard<std::mutex> lock(qryMutex);
+            mdSnap.push_back(tick);
+        }
+        //LOG(INFO)<<__FUNCTION__<<","<<pDepthMarketData->InstrumentID<<","<<pDepthMarketData->LastPrice;
+    }
+    if(bIsLast)
+    {
+        LOG(INFO)<<__FUNCTION__;
+        sync_status=2;
     }
 }
 

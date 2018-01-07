@@ -446,3 +446,11 @@ int bpm_timeofctime(const char* buf, const char* fmt)
     std::time_t t = bpm_str2ctime(buf, fmt);
     return bpm_timeofctime(t);
 }
+
+void bpm_getLocalTime(char *currentTime,const char* fmt)
+{
+    ///获取本机时间，格式如 "20170910 09:00:01"
+    time_t rawTime;
+    time(&rawTime);
+    strftime(currentTime,20,fmt,localtime(&rawTime));
+}

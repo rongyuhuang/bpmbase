@@ -24,3 +24,4 @@ int bpm_timeofctime(const char* buf, const char* fmt);
 // 周五夜盘和下周一合并
 bool bpm_sametradingday(int64_t b1, int64_t b2);
 
+void bpm_getLocalTime(char* currentTime,const char* fmt="%Y%m%d-%X");

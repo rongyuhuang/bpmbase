@@ -5,12 +5,15 @@
 
 #include<string>
 #include<vector>
+#include<list>
 
 #include<mutex>
 #include<atomic>
 #include<condition_variable>
 
 #include"ThostFtdcTraderApi.h"
+
+#include"ctpstruct.h"
 
 class TdSm:public CThostFtdcTraderSpi
 {
@@ -43,6 +46,9 @@ public:
     std::atomic_bool started;
     std::atomic_int sync_status;
 
+    //查询相关的控制与数据
+    std::mutex qryMutex;
+    std::list<TickData*> mdSnap;
 private:
     CThostFtdcTraderApi* tdApi = nullptr;
 
