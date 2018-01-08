@@ -2,24 +2,10 @@
 #include<fstream>
 #include<list>
 #include <iostream>
-#include<thread>
-#include<chrono>
-#include<iomanip>
-#include<ctime>
-#include<map>
-#include<string>
-#include<vector>
-#include<functional>
-#include<algorithm>
 
-#include"easyctp/easyctp.h"
 #include"easyctp/ctputils.h"
-#include"utils/logging.h"
-#include"utils/fileutil.h"
-#include"utils/crashdump.h"
-#include"utils/timeutil.h"
-#include<fmt/format.h>
-
+#include"utils/alias.h"
+#include"kbarutils/kbartable.h"
 DataReceiver::DataReceiver(const Config& cfg):
    config(cfg)
 {
@@ -29,6 +15,16 @@ DataReceiver::DataReceiver(const Config& cfg):
 DataReceiver::~DataReceiver()
 {
     LOG(INFO)<<__FUNCTION__;
+    for(auto& x:tickStorage)
+    {
+        delete x.second;
+    }
+    tickStorage.clear();
+
+    for(auto& x:tickCache)
+    {
+        delete x.second;
+    }
     tickCache.clear();
     tickMap.clear();
 }
@@ -42,9 +38,9 @@ void DataReceiver::start()
     qryTickThread.reset(new std::thread(std::bind(&DataReceiver::tickCollect,this)));
 
 
-    for(auto x:subscribePool)
+    for(auto& x:subscribePool)
     {
-        tickCache[x] = std::vector<TickData>();
+        tickCache[x] = new std::vector<TickData*>;
         int ret = md_subscribe(x.c_str());
         CHECK(ret ==STATUS_OK);
         LOG(INFO)<<__FUNCTION__<<","<<x;
@@ -70,13 +66,76 @@ void DataReceiver::stop()
 
 void DataReceiver::onTick(TickData *tick)
 {
+    LOG(INFO)<<__FUNCTION__<<" 1";
     std::lock_guard<std::mutex> lock(tick_mutex);
     if(quit)
     {
         return;
     }
+    //缓存
+    LOG(INFO)<<__FUNCTION__<<" 2";
+    auto it = tickStorage.find(tick->symbol);
+    if(it != tickStorage.end())
+    {
+        TickStorage* storage = it->second;
+        //有效性检查
+        TickData* lastestTick = storage->getLatestTick();
+        utils::Alias(&lastestTick);
+        if(!KBarTable::isValidTickData(tick,true))
+        {
+            if(lastestTick !=nullptr)
+            {
+                CHECK(0);
+            }
+            return;
+        }
+        if(lastestTick == nullptr)
+        {
+            tick->volume=0;
+        }
+        else
+        {
+            tick->volume = tick->totalVolume - lastestTick->totalVolume;
+            if(tick->volume<0)
+            {
+                if(true)
+                {
+                    //实盘
+                    TickData uglyTick;
+                    memset(&uglyTick,0,sizeof(TickData));
+                    storage->getLatestTick(uglyTick);
+                    utils::Alias(&uglyTick);
+                    CHECK(tick->volume>=0);
+                }
+                else
+                {
+                    //模拟盘
+                    tick->volume=0;
+                }
+            }
+        }
+        //缓存
+        storage->appendTick(tick);
+        //TickData* newTick = storage->appendTick(tick);
+        //save newTick to local?
+
+        //当为主力合约时，更新指数
+        LOG(INFO)<<__FUNCTION__<<" 3";
+        char prod[3];
+        memset(prod,0,sizeof(prod));
+        CtpUtils::instrument2product(tick->symbol,prod);
+        auto inst = mainContractMap[std::string(prod)];
+        if(inst==std::string(tick->symbol))
+        {
+            LOG(INFO)<<"update "<<prod<<"0000\' price";
+        }
+        else
+        {
+            LOG(INFO)<<tick->symbol<<" is not a main contract";
+        }
+    }
     auto& x = tickCache[std::string(tick->symbol)];
-    x.push_back(*tick);
+    x->push_back(tick);
 }
 
 void DataReceiver::tickCollect()
@@ -120,6 +179,21 @@ void DataReceiver::tickCollect()
     LOG(INFO)<<__FUNCTION__<<" end.";
 }
 
+bool DataReceiver:: getLastestTick(const char* symbol,TickData& result)
+{
+    std::lock_guard<std::mutex> lock(tick_mutex);
+    if(quit)
+    {
+        return false;
+    }
+    auto it = tickStorage.find(symbol);
+    if(it != tickStorage.end())
+    {
+        TickStorage* ticks = it->second;
+        return ticks->getLatestTick(result);
+    }
+    return false;
+}
 void DataReceiver::prepareMd()
 {
     md_setBrokerInfo(config.mdBrokerID.c_str(),config.mdFront.c_str());
@@ -139,18 +213,20 @@ void DataReceiver::initSubscribePool()
     TickData* mdSnap=nullptr;
     int count=0;
     int ret =td_queryMarketData(&mdSnap,&count);
-    //LOG(INFO)<<fmt::format("td_queryMarketData()={},count={}",ret,count);
+    LOG(INFO)<<"td_queryMarketData()="<<ret<<",count="<<count;
     std::map<std::string,std::vector<TickData>> prodOiMap;
 
     for(int i = 0;i<count;++i)
     {
         char prod[3];
+        memset(prod,0,sizeof(prod));
         //LOG(INFO)<<fmt::format("{} Volume={} , OI={}", mdSnap[i].symbol, mdSnap[i].totalVolume, mdSnap[i].openInterest);
         CtpUtils::instrument2product(mdSnap[i].symbol,prod);
         std::string productID = std::string(prod);
         if(std::find(config.symbols.cbegin(),config.symbols.cend(),productID)
                 ==config.symbols.cend())
         {
+            LOG(INFO)<<mdSnap[i].symbol<<" does not in subscribe products";
             continue;
         }
         auto iter = prodOiMap.find(productID);
@@ -168,27 +244,48 @@ void DataReceiver::initSubscribePool()
     auto begin = prodOiMap.cbegin();
     while(begin!=prodOiMap.cend())
     {
+        tickCache[StrUtil::printf("%s0000",begin->first)] = new std::vector<TickData*>;
+        prodInstMap[begin->first] = std::vector<std::string>();
         //LOG(INFO)<<fmt::format("{} has {} contracts",begin->first,begin->second.size());
         int sumOi = 0;
+        int maxOi=0;
         auto iter = begin->second.cbegin();
         while(iter != begin->second.cend())
         {
+            if(maxOi< (*iter).openInterest)
+            {
+                mainContractMap[begin->first]=(*iter).symbol; //取品种对应的主力合约
+            }
             subscribePool.push_back(std::string((*iter).symbol));
+            prodInstMap[begin->first].push_back(std::string((*iter).symbol));
             sumOi+= (*iter).openInterest;
             ++iter;
         }
-        iter = begin->second.cbegin();
-        while(iter != begin->second.cend())
-        {
-            double weight = (*iter).openInterest == 0 ? 0:(*iter).openInterest/(double)sumOi;
-            prodWeight[std::string((*iter).symbol)]= weight;
-            instrumentWeight[std::string((*iter).symbol)] =weight;
-            std::cout<<(*iter).symbol<<" weight="<<prodWeight[std::string((*iter).symbol)]<<std::endl;
-            ++iter;
-        }
+//        iter = begin->second.cbegin();
+//        while(iter != begin->second.cend())
+//        {
+//            double weight = (*iter).openInterest == 0 ? 0:(*iter).openInterest/(double)sumOi;
+//            prodWeight[std::string((*iter).symbol)]= weight;
+//            instrumentWeight[std::string((*iter).symbol)] =weight;
+//            std::cout<<(*iter).symbol<<" weight="<<prodWeight[std::string((*iter).symbol)]<<std::endl;
+//            ++iter;
+//        }
         ++begin;
     }
-
+    std::cout<<"output product->instrument map"<<std::endl;
+    auto prodInstIter = prodInstMap.cbegin();
+    while(prodInstIter != prodInstMap.cend())
+    {
+        std::cout<<prodInstIter->first<<":\t";
+        auto instIter = (prodInstIter->second).cbegin();
+        while(instIter != (prodInstIter->second).cend())
+        {
+            std::cout<<*instIter<<",";
+            instIter++;
+        }
+        std::cout<<std::endl;
+        prodInstIter++;
+    }
     td_stop();
 }
 void DataReceiver::saveTicks()
@@ -198,7 +295,7 @@ void DataReceiver::saveTicks()
     while(begin !=tickCache.cend())
     {
         auto sym = begin->first.c_str();
-        auto vec = begin->second;
+        auto vec = *begin->second;
         std::string path= StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt", sym,md_getTradingDay());
         std::ofstream file;
         file.open(path,std::ios::binary|std::ios::app);

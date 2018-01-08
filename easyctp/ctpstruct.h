@@ -52,26 +52,33 @@ struct TickData{
     int volume;
     int totalVolume;
     int openInterest;
-    double bid1Price;
-    int bid1Volume;
-    double ask1Price;
-    int ask1Volume;
+    double bidPrice;
+    int bidVolume;
+    double askPrice;
+    int askVolume;
     //日K信息
     double openPrice;
     double highPrice;
     double lowPrice;
     double closePrice;
-    double settlePrice;
-    double preclosePrice;
-    double presettlePrice;
+    double settlementPrice;
+    double preClosePrice;
+    double preSettlementPrice;
     double averagePrice;
-    double upperLimitPrice;
-    double lowerLimitPrice;
+    double upperLimit;
+    double lowerLimit;
 
 };
 
 struct KBarData{
-
+    char symbol[STR_LEN_SMALL];
+    long long actionDatetime;
+    int volume;
+    double openInterest;
+    double openPrice;
+    double highPrice;
+    double lowPrice;
+    double closePrice;
 };
 
 

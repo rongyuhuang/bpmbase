@@ -11,7 +11,7 @@
 
 #include"utils/logging.h"
 #include"utils/timeutil.h"
-
+#include"kbarutils/tickstorage.h"
 #include"config.h"
 #include"simplesyncqueue.h"
 class DataReceiver{
@@ -27,13 +27,18 @@ public:
 
     void tickCollect();
 
+    bool getLastestTick(const char* symbol,TickData& result);
+
 public:
     std::map<std::string,SimpleSyncQueue<TickData>> tickMap;
-    std::map<std::string,std::vector<TickData>> tickCache;
+    std::map<std::string,std::vector<TickData*>*> tickCache;
+    std::map<std::string,TickStorage*> tickStorage;
 
 private:
     Config config;
     std::map<std::string,double> instrumentWeight;
+    std::map<std::string,std::vector<std::string>> prodInstMap; //品种-所有对应合约
+    std::map<std::string,std::string> mainContractMap;//品种-主力合约(持仓量最大)
     std::vector<std::string> subscribePool;
     std::mutex tick_mutex;
     std::atomic_bool quit;

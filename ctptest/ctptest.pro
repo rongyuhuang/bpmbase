@@ -12,7 +12,7 @@ include(../easyctp.pri)
 include(../msvc.pri)
 include(../utils.pri)
 include(../fmt.pri)
-
+include(../kbarutils.pri)
 HEADERS += \
     datareceiver.h \
     config.h \

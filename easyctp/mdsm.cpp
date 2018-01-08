@@ -249,22 +249,22 @@ void MdSm:: OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketDat
     tick->totalVolume = pDepthMarketData->Volume;
     //TODO:volume
     tick->openInterest = pDepthMarketData->OpenInterest;
-    tick->ask1Price = pDepthMarketData->AskPrice1;
-    tick->ask1Volume = pDepthMarketData->AskVolume1;
-    tick->bid1Price = pDepthMarketData->BidPrice1;
-    tick->bid1Volume = pDepthMarketData->BidVolume1;
+    tick->askPrice = pDepthMarketData->AskPrice1;
+    tick->askVolume = pDepthMarketData->AskVolume1;
+    tick->bidPrice = pDepthMarketData->BidPrice1;
+    tick->bidVolume = pDepthMarketData->BidVolume1;
 
     tick->openPrice = pDepthMarketData->OpenPrice;
     tick->highPrice = pDepthMarketData->HighestPrice;
     tick->lowPrice = pDepthMarketData->LowestPrice;
     tick->closePrice = pDepthMarketData->ClosePrice;
-    tick->settlePrice = pDepthMarketData->SettlementPrice;
+    tick->settlementPrice = pDepthMarketData->SettlementPrice;
 
-    tick->preclosePrice = pDepthMarketData->PreClosePrice;
-    tick->presettlePrice = pDepthMarketData->PreSettlementPrice;
+    tick->preClosePrice = pDepthMarketData->PreClosePrice;
+    tick->preSettlementPrice = pDepthMarketData->PreSettlementPrice;
     tick->averagePrice = pDepthMarketData->AveragePrice;
-    tick->upperLimitPrice = pDepthMarketData->UpperLimitPrice;
-    tick->lowerLimitPrice = pDepthMarketData->LowerLimitPrice;
+    tick->upperLimit = pDepthMarketData->UpperLimitPrice;
+    tick->lowerLimit = pDepthMarketData->LowerLimitPrice;
 
 //    auto tickLine =fmt::format("{} {} {}/{} {}/{} {}/{}",tick->symbol,tick->actionDatetime,
 //                               tick->lastPrice,tick->totalVolume,tick->bid1Price,tick->ask1Volume,
