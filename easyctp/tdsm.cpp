@@ -2,7 +2,7 @@
 #include"tdsm.h"
 #include"ctputils.h"
 #include<utils/logging.h>
-
+#include<utils/timeutil.h>
 #include<fmt/format.h>
 
 TdSm::TdSm()
@@ -310,9 +310,16 @@ void TdSm::OnRspQryDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketD
             memset(tick,0,sizeof(tick));
 
             strncpy(tick->symbol,pDepthMarketData->InstrumentID,sizeof(tick->symbol)-1);
+            static char buffTime[32];
+            sprintf(buffTime,"%s %s",pDepthMarketData->ActionDay,pDepthMarketData->UpdateTime);
+            char format[] ="%Y%m%d %H:%M:%S";
+            tick->actionDatetime = bpm_str2ctime(buffTime,format);
+            tick->updateMS = pDepthMarketData->UpdateMillisec;
 
             tick->lastPrice = pDepthMarketData->LastPrice;
             tick->totalVolume = pDepthMarketData->Volume;
+            tick->openInterest = pDepthMarketData->OpenInterest;
+
             tick->askPrice = pDepthMarketData->AskPrice1;
             tick->askVolume = pDepthMarketData->AskVolume1;
             tick->bidPrice = pDepthMarketData->BidPrice1;
@@ -327,8 +334,9 @@ void TdSm::OnRspQryDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketD
             tick->upperLimit = pDepthMarketData->UpperLimitPrice;
             tick->lowerLimit = pDepthMarketData->LowerLimitPrice;
 
-            tick->openInterest = pDepthMarketData->OpenInterest;
-
+            tick->preSettlementPrice = pDepthMarketData->PreSettlementPrice;
+            tick->preClosePrice = pDepthMarketData->PreClosePrice;
+            tick->averagePrice = pDepthMarketData->AveragePrice;
             std::lock_guard<std::mutex> lock(qryMutex);
             mdSnap.push_back(tick);
         }

@@ -41,6 +41,8 @@ void DataReceiver::start()
     for(auto& x:subscribePool)
     {
         tickCache[x] = new std::vector<TickData*>;
+        TickStorage* storage = new TickStorage(86400);
+        tickStorage[x]=storage;
         int ret = md_subscribe(x.c_str());
         CHECK(ret ==STATUS_OK);
         LOG(INFO)<<__FUNCTION__<<","<<x;
@@ -66,19 +68,16 @@ void DataReceiver::stop()
 
 void DataReceiver::onTick(TickData *tick)
 {
-    LOG(INFO)<<__FUNCTION__<<" 1";
     std::lock_guard<std::mutex> lock(tick_mutex);
     if(quit)
     {
         return;
     }
-    //缓存
-    LOG(INFO)<<__FUNCTION__<<" 2";
     auto it = tickStorage.find(tick->symbol);
     if(it != tickStorage.end())
     {
         TickStorage* storage = it->second;
-        //有效性检查
+        //1.有效性检查
         TickData* lastestTick = storage->getLatestTick();
         utils::Alias(&lastestTick);
         if(!KBarTable::isValidTickData(tick,true))
@@ -87,11 +86,12 @@ void DataReceiver::onTick(TickData *tick)
             {
                 CHECK(0);
             }
-            return;
+            //return;
         }
+        //2.计算当前tick的volume
         if(lastestTick == nullptr)
         {
-            tick->volume=0;
+            tick->volume=tick->totalVolume; //如果是开盘第一个tick，volume=totalvolume
         }
         else
         {
@@ -114,27 +114,26 @@ void DataReceiver::onTick(TickData *tick)
                 }
             }
         }
-        //缓存
+        //3.根据交易所信息，修正 turnover和averageprice， ZCE
+
+        //4.缓存
         storage->appendTick(tick);
         //TickData* newTick = storage->appendTick(tick);
-        //save newTick to local?
+        //5.save newTick to local?
 
-        //当为主力合约时，更新指数
-        LOG(INFO)<<__FUNCTION__<<" 3";
+        //6.当为主力合约时，更新指数
         char prod[3];
         memset(prod,0,sizeof(prod));
         CtpUtils::instrument2product(tick->symbol,prod);
-        auto inst = mainContractMap[std::string(prod)];
+        auto productID = std::string(prod);
+        auto inst = mainContractMap[productID];
         if(inst==std::string(tick->symbol))
         {
             LOG(INFO)<<"update "<<prod<<"0000\' price";
-        }
-        else
-        {
-            LOG(INFO)<<tick->symbol<<" is not a main contract";
+            calcIndex(productID,tick);
         }
     }
-    auto& x = tickCache[std::string(tick->symbol)];
+    auto& x = tickCache[tick->symbol];
     x->push_back(tick);
 }
 
@@ -226,7 +225,7 @@ void DataReceiver::initSubscribePool()
         if(std::find(config.symbols.cbegin(),config.symbols.cend(),productID)
                 ==config.symbols.cend())
         {
-            LOG(INFO)<<mdSnap[i].symbol<<" does not in subscribe products";
+            //LOG(INFO)<<mdSnap[i].symbol<<" does not in subscribe products";
             continue;
         }
         auto iter = prodOiMap.find(productID);
@@ -244,7 +243,11 @@ void DataReceiver::initSubscribePool()
     auto begin = prodOiMap.cbegin();
     while(begin!=prodOiMap.cend())
     {
-        tickCache[StrUtil::printf("%s0000",begin->first)] = new std::vector<TickData*>;
+        std::string indexSym =begin->first+"0000";
+        tickCache[indexSym] = new std::vector<TickData*>;
+        TickStorage* storage = new TickStorage(86400);
+        tickStorage[indexSym]=storage;
+
         prodInstMap[begin->first] = std::vector<std::string>();
         //LOG(INFO)<<fmt::format("{} has {} contracts",begin->first,begin->second.size());
         int sumOi = 0;
@@ -316,4 +319,47 @@ void DataReceiver::saveTicks()
 void DataReceiver::loadTicks()
 {
 
+}
+
+void DataReceiver::calcIndex(const std::string &productID, TickData *mainTick)
+{
+    auto symbols = prodInstMap[productID];
+    auto indexSym = productID+"0000";// StrUtil::printf("%s0000",productID);
+    LOG(INFO)<<__FUNCTION__<<",current index:"<<indexSym;
+    //计算指数价格
+    double totalOI=0,totalOI_PX=0;
+    for(auto& sym :symbols)
+    {
+        auto iter = tickStorage.find(sym);
+        CHECK(iter !=tickStorage.end());
+        TickStorage* storage =iter->second;
+        TickData* lastestTick = storage->getLatestTick();
+        if(lastestTick !=0 && KBarTable::isValidTickData(lastestTick,false))
+        {
+            totalOI +=lastestTick->openInterest;
+            totalOI_PX += lastestTick->openInterest * lastestTick->lastPrice;
+        }
+    }
+    auto indexPx = totalOI_PX==0 ? 0: totalOI_PX/totalOI;
+    //以主力合约为基础，更新指数tick
+    TickData indexTick=*mainTick;
+
+//    memset(indexTick,0,sizeof(TickData));
+//    memcpy(indexTick,mainTick,sizeof(indexTick));
+    indexTick.lastPrice = indexPx;
+    indexTick.openInterest =totalOI;
+    auto& x = tickCache[indexSym];
+     x->push_back(&indexTick);
+    auto indexIter = tickStorage.find(indexSym);
+    if(indexIter !=tickStorage.end())
+    {
+        TickStorage* indexStorage = indexIter->second;
+        indexStorage->appendTick(&indexTick);
+    }
+    else
+    {
+        TickStorage* storage = new TickStorage(86400);
+        storage->appendTick(&indexTick);
+        tickStorage[indexSym] = storage;
+    }
 }

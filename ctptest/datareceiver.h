@@ -36,7 +36,6 @@ public:
 
 private:
     Config config;
-    std::map<std::string,double> instrumentWeight;
     std::map<std::string,std::vector<std::string>> prodInstMap; //品种-所有对应合约
     std::map<std::string,std::string> mainContractMap;//品种-主力合约(持仓量最大)
     std::vector<std::string> subscribePool;
@@ -49,5 +48,6 @@ private:
     void initSubscribePool();
     void saveTicks();
     void loadTicks();
+    void calcIndex(const std::string& productID,TickData* mainTick);
 };
 #endif // DATARECEIVER_H
