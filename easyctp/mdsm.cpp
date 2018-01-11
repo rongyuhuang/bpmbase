@@ -270,7 +270,7 @@ void MdSm:: OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *pDepthMarketDat
 //                               tick->lastPrice,tick->totalVolume,tick->bid1Price,tick->ask1Volume,
 //                               tick->ask1Price,tick->ask1Volume);
 //    LOG(INFO)<<tickLine.c_str();
-    LOG(INFO)<<tick->symbol<<","<<bpm_ctime2str( tick->actionDatetime,"%Y%m%d %H:%M:%S").c_str()<<","<<tick->lastPrice;
+    //LOG(INFO)<<tick->symbol<<","<<bpm_ctime2str( tick->actionDatetime,"%Y%m%d %H:%M:%S").c_str()<<","<<tick->lastPrice;
     //入队
     std::lock_guard<std::mutex> lock(ticks_mutex);
     ticks.push_back(buff);

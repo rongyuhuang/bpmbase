@@ -5,6 +5,7 @@
 
 #include<string>
 #include<vector>
+#include<list>
 #include<atomic>
 #include<mutex>
 #include<condition_variable>
@@ -31,7 +32,7 @@ public:
     std::atomic_int sync_status; //同步状态
 
     //tick相关
-    std::vector<void*> ticks;
+    std::list<void*> ticks;
     std::condition_variable ticks_cv;
     std::mutex ticks_mutex;
     std::atomic_bool need_notify;

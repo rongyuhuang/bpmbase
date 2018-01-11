@@ -138,7 +138,7 @@ int __cdecl md_queryRtnData(RtnData* rtnData)
     //转换数据
     void* data = nullptr;
     data = g_mdSm.ticks.front();
-    g_mdSm.ticks.pop_back();
+    g_mdSm.ticks.pop_front();
     rtnData->rtnDataType = *(int*)data;
     rtnData->rtnDataPtr = (void*)((char*)data+4);//从data的首地址向后移四位
     return STATUS_OK;

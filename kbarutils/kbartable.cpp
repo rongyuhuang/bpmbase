@@ -1,6 +1,5 @@
 #include "kbartable.h"
 #include "utils/logging.h"
-
 #include "utils/timeutil.h"
 #include <algorithm>
 #include <cmath>
@@ -266,12 +265,20 @@ bool KBarTable::isValidTickData(TickData* currTick, bool checkDatetime)
     }
 
     // 价格检查
-    if (!std::isnormal(currTick->lastPrice) || !std::isnormal(currTick->lowerLimit)
-        || !std::isnormal(currTick->upperLimit) || !std::isnormal(currTick->askPrice)
-        || !std::isnormal(currTick->bidPrice) || !std::isnormal(currTick->openPrice)
-        || !std::isnormal(currTick->highPrice) || !std::isnormal(currTick->lowPrice)
-        || !std::isnormal(currTick->preClosePrice) || !std::isnormal(currTick->averagePrice)
-        || !std::isnormal(currTick->preSettlementPrice) || !std::isnormal(currTick->settlementPrice)) {
+    if (currTick->lastPrice< 0 ||currTick->lowerLimit< 0
+        ||currTick->upperLimit< 0 ||currTick->askPrice< 0
+        ||currTick->bidPrice< 0 ||currTick->openPrice< 0
+        ||currTick->highPrice< 0 ||currTick->lowPrice< 0
+        ||currTick->preClosePrice< 0 ||currTick->averagePrice< 0
+        ||currTick->preSettlementPrice< 0 )
+//    if (!std::isnormal(currTick->lastPrice) || !std::isnormal(currTick->lowerLimit)
+//        || !std::isnormal(currTick->upperLimit) || !std::isnormal(currTick->askPrice)
+//        || !std::isnormal(currTick->bidPrice) || !std::isnormal(currTick->openPrice)
+//        || !std::isnormal(currTick->highPrice) || !std::isnormal(currTick->lowPrice)
+//        || !std::isnormal(currTick->preClosePrice) || !std::isnormal(currTick->averagePrice)
+//        || !std::isnormal(currTick->preSettlementPrice) )
+        //|| !std::isnormal(currTick->settlementPrice)|| !std::isnormal(currTick->closePrice) //交易时段中，这两个字段为MAX_DOUBLE
+    {
         return false;
     }
 

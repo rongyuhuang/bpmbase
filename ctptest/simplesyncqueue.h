@@ -11,6 +11,10 @@ template <typename T>
 class SimpleSyncQueue{
 public:
     SimpleSyncQueue(){}
+    ~SimpleSyncQueue()
+    {
+        m_queue.clear();
+    }
     void Put(const T& x)
     {
         std::lock_guard<std::mutex> lock(m_mutex);

@@ -2,6 +2,7 @@
 #include<fstream>
 #include<list>
 #include <iostream>
+#include<cmath>
 
 #include"easyctp/ctputils.h"
 #include"utils/alias.h"
@@ -45,7 +46,7 @@ void DataReceiver::start()
         tickStorage[x]=storage;
         int ret = md_subscribe(x.c_str());
         CHECK(ret ==STATUS_OK);
-        LOG(INFO)<<__FUNCTION__<<","<<x;
+        //LOG(INFO)<<__FUNCTION__<<","<<x;
     }
 }
 
@@ -80,11 +81,11 @@ void DataReceiver::onTick(TickData *tick)
         //1.有效性检查
         TickData* lastestTick = storage->getLatestTick();
         utils::Alias(&lastestTick);
-        if(!KBarTable::isValidTickData(tick,true))
+        if(!CtpUtils::isValidTickData(tick,true))
         {
             if(lastestTick !=nullptr)
             {
-                CHECK(0);
+                //CHECK(0);
             }
             //return;
         }
@@ -129,7 +130,7 @@ void DataReceiver::onTick(TickData *tick)
         auto inst = mainContractMap[productID];
         if(inst==std::string(tick->symbol))
         {
-            LOG(INFO)<<"update "<<prod<<"0000\' price";
+            LOG(INFO)<<"receive "<<productID<<"\'s main contract:"<<inst<<",update its index price ";
             calcIndex(productID,tick);
         }
     }
@@ -325,7 +326,7 @@ void DataReceiver::calcIndex(const std::string &productID, TickData *mainTick)
 {
     auto symbols = prodInstMap[productID];
     auto indexSym = productID+"0000";// StrUtil::printf("%s0000",productID);
-    LOG(INFO)<<__FUNCTION__<<",current index:"<<indexSym;
+
     //计算指数价格
     double totalOI=0,totalOI_PX=0;
     for(auto& sym :symbols)
@@ -334,13 +335,15 @@ void DataReceiver::calcIndex(const std::string &productID, TickData *mainTick)
         CHECK(iter !=tickStorage.end());
         TickStorage* storage =iter->second;
         TickData* lastestTick = storage->getLatestTick();
-        if(lastestTick !=0 && KBarTable::isValidTickData(lastestTick,false))
+        if(lastestTick !=0 && CtpUtils::isValidTickData(lastestTick,true))
         {
             totalOI +=lastestTick->openInterest;
             totalOI_PX += lastestTick->openInterest * lastestTick->lastPrice;
         }
     }
     auto indexPx = totalOI_PX==0 ? 0: totalOI_PX/totalOI;
+    indexPx = std::round(indexPx);
+    LOG(INFO)<<__FUNCTION__<<",current index:"<<indexSym<<",price:"<<indexPx;
     //以主力合约为基础，更新指数tick
     TickData indexTick=*mainTick;
 

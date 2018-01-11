@@ -16,4 +16,6 @@ void Str2Tick(const std::string tickLine);
 bool isErrorRsp(CThostFtdcRspInfoField* rspInfo,int reqID);
 
 void instrument2product(const char* instrument,char* product);
+
+bool isValidTickData(TickData* currTick, bool checkDatetime);
 }
