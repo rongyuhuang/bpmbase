@@ -34,6 +34,7 @@ void DataReceiver::start()
 {
     std::lock_guard<std::mutex> lock(tick_mutex);
     initSubscribePool();
+    loadTicks();
     quit=false;
     md_start();
     qryTickThread.reset(new std::thread(std::bind(&DataReceiver::tickCollect,this)));
@@ -42,8 +43,6 @@ void DataReceiver::start()
     for(auto& x:subscribePool)
     {
         tickCache[x] = new std::vector<TickData*>;
-        TickStorage* storage = new TickStorage(86400);
-        tickStorage[x]=storage;
         int ret = md_subscribe(x.c_str());
         CHECK(ret ==STATUS_OK);
         //LOG(INFO)<<__FUNCTION__<<","<<x;
@@ -118,24 +117,26 @@ void DataReceiver::onTick(TickData *tick)
         //3.根据交易所信息，修正 turnover和averageprice， ZCE
 
         //4.缓存
-        storage->appendTick(tick);
-        //TickData* newTick = storage->appendTick(tick);
-        //5.save newTick to local?
+        TickData* newTick = storage->appendTick(tick);
+        auto& x= tickCache[newTick->symbol];
+        if(x->size()==120) //大约1min保存一次
+        {
+            saveTickToFile(tick->symbol,*x);
+        }
+        x->push_back(tick);
 
-        //6.当为主力合约时，更新指数
+        //5.当为主力合约时，更新指数
         char prod[3];
         memset(prod,0,sizeof(prod));
-        CtpUtils::instrument2product(tick->symbol,prod);
+        CtpUtils::instrument2product(newTick->symbol,prod);
         auto productID = std::string(prod);
         auto inst = mainContractMap[productID];
-        if(inst==std::string(tick->symbol))
+        if(inst==std::string(newTick->symbol))
         {
             LOG(INFO)<<"receive "<<productID<<"\'s main contract:"<<inst<<",update its index price ";
-            calcIndex(productID,tick);
+            calcIndex(productID,newTick);
         }
     }
-    auto& x = tickCache[tick->symbol];
-    x->push_back(tick);
 }
 
 void DataReceiver::tickCollect()
@@ -210,6 +211,8 @@ void DataReceiver::prepareTd()
 void DataReceiver::initSubscribePool()
 {
     td_start();
+    tradingDay =std::string(td_getTradingDay());
+
     TickData* mdSnap=nullptr;
     int count=0;
     int ret =td_queryMarketData(&mdSnap,&count);
@@ -238,16 +241,12 @@ void DataReceiver::initSubscribePool()
         {
             prodOiMap[productID].push_back(mdSnap[i]);
         }
-        memset(prod,0,sizeof(prod)/sizeof(char));
     }
-    std::map<std::string,double> prodWeight;
     auto begin = prodOiMap.cbegin();
     while(begin!=prodOiMap.cend())
     {
         std::string indexSym =begin->first+"0000";
         tickCache[indexSym] = new std::vector<TickData*>;
-        TickStorage* storage = new TickStorage(86400);
-        tickStorage[indexSym]=storage;
 
         prodInstMap[begin->first] = std::vector<std::string>();
         //LOG(INFO)<<fmt::format("{} has {} contracts",begin->first,begin->second.size());
@@ -265,31 +264,22 @@ void DataReceiver::initSubscribePool()
             sumOi+= (*iter).openInterest;
             ++iter;
         }
-//        iter = begin->second.cbegin();
-//        while(iter != begin->second.cend())
-//        {
-//            double weight = (*iter).openInterest == 0 ? 0:(*iter).openInterest/(double)sumOi;
-//            prodWeight[std::string((*iter).symbol)]= weight;
-//            instrumentWeight[std::string((*iter).symbol)] =weight;
-//            std::cout<<(*iter).symbol<<" weight="<<prodWeight[std::string((*iter).symbol)]<<std::endl;
-//            ++iter;
-//        }
         ++begin;
     }
-    std::cout<<"output product->instrument map"<<std::endl;
-    auto prodInstIter = prodInstMap.cbegin();
-    while(prodInstIter != prodInstMap.cend())
-    {
-        std::cout<<prodInstIter->first<<":\t";
-        auto instIter = (prodInstIter->second).cbegin();
-        while(instIter != (prodInstIter->second).cend())
-        {
-            std::cout<<*instIter<<",";
-            instIter++;
-        }
-        std::cout<<std::endl;
-        prodInstIter++;
-    }
+//    std::cout<<"output product->instrument map"<<std::endl;
+//    auto prodInstIter = prodInstMap.cbegin();
+//    while(prodInstIter != prodInstMap.cend())
+//    {
+//        std::cout<<prodInstIter->first<<":\t";
+//        auto instIter = (prodInstIter->second).cbegin();
+//        while(instIter != (prodInstIter->second).cend())
+//        {
+//            std::cout<<*instIter<<",";
+//            instIter++;
+//        }
+//        std::cout<<std::endl;
+//        prodInstIter++;
+//    }
     td_stop();
 }
 void DataReceiver::saveTicks()
@@ -300,29 +290,69 @@ void DataReceiver::saveTicks()
     {
         auto sym = begin->first.c_str();
         auto vec = *begin->second;
-        std::string path= StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt", sym,md_getTradingDay());
-        std::ofstream file;
-        file.open(path,std::ios::binary|std::ios::app);
-        if(file.is_open()==false)
-        {
-            continue;
-        }
-        for(auto & v:vec)
-        {
-            file.write((char*)&v,sizeof(TickData));
-        }
-        vec.clear();
-        file.close();
+        saveTickToFile(sym,vec);
         ++begin;
     }
 }
 
-void DataReceiver::loadTicks()
+void DataReceiver::saveTickToFile(const char* symbol,std::vector<TickData*>& ticks)
 {
-
+    std::string path= StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt", symbol,tradingDay.c_str());
+    std::ofstream file;
+    file.open(path,std::ios::binary|std::ios::app);
+    if(file.is_open())
+    {
+        for(auto & v:ticks)
+        {
+            file.write((char*)&v,sizeof(TickData));
+        }
+    }
+    ticks.clear();
+    file.close();
 }
 
-void DataReceiver::calcIndex(const std::string &productID, TickData *mainTick)
+void DataReceiver::loadTicks()
+{
+    auto iter = prodInstMap.begin();
+    while(iter != prodInstMap.end())
+    {
+        auto productID = iter->first;
+        auto symbols = iter->second;
+        for(auto & sym:symbols)
+        {
+            TickStorage* storage= new TickStorage(86400);
+            std::string fname = StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt",
+                                               sym.c_str(),tradingDay.c_str());
+            loadTickFromFile(fname,storage);
+            tickStorage[sym] = storage;
+        }
+        //指数的
+        std::string indexSym = StrUtil::printf("%s0000",productID.c_str());
+        TickStorage* storage= new TickStorage(86400);
+        std::string fname = StrUtil::printf("c:/temp/datafeed/tick/%s_%s.txt",
+                                           indexSym.c_str(),tradingDay.c_str());
+        loadTickFromFile(fname,storage);
+        tickStorage[indexSym] = storage;
+
+        iter++;
+    }
+}
+void DataReceiver::loadTickFromFile(const std::string fname,TickStorage* result)
+{
+    std::ifstream file;
+    file.open(fname,std::ios::binary);
+    TickData tick;
+    int ncount=0;
+    while(file.is_open()&& !file.eof()&& file.read((char*)&tick,sizeof(TickData)))
+    {
+        result->appendTick(&tick);
+        ncount++;
+    }
+    file.close();
+    LOG(INFO)<<__FUNCTION__<<",file="<<fname<<",count="<<ncount;
+}
+
+void DataReceiver::calcIndex(const std::string &productID, const TickData *mainTick)
 {
     auto symbols = prodInstMap[productID];
     auto indexSym = productID+"0000";// StrUtil::printf("%s0000",productID);
@@ -337,13 +367,14 @@ void DataReceiver::calcIndex(const std::string &productID, TickData *mainTick)
         TickData* lastestTick = storage->getLatestTick();
         if(lastestTick !=0 && CtpUtils::isValidTickData(lastestTick,true))
         {
+            LOG(INFO)<<__FUNCTION__<<",symbol="<<sym<<",oi="<<lastestTick->openInterest<<",lastPrice="<<lastestTick->lastPrice;
             totalOI +=lastestTick->openInterest;
             totalOI_PX += lastestTick->openInterest * lastestTick->lastPrice;
         }
     }
     auto indexPx = totalOI_PX==0 ? 0: totalOI_PX/totalOI;
-    indexPx = std::round(indexPx);
-    LOG(INFO)<<__FUNCTION__<<",current index:"<<indexSym<<",price:"<<indexPx;
+    //indexPx = std::round(indexPx);
+    LOG(INFO)<<__FUNCTION__<<",current index:"<<indexSym<<",oi="<<totalOI<<",price="<<indexPx<<",std::round(indexPrice)="<<std::round(indexPx);
     //以主力合约为基础，更新指数tick
     TickData indexTick=*mainTick;
 

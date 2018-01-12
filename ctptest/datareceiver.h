@@ -36,6 +36,7 @@ public:
 
 private:
     Config config;
+    std::string tradingDay;
     std::map<std::string,std::vector<std::string>> prodInstMap; //品种-所有对应合约
     std::map<std::string,std::string> mainContractMap;//品种-主力合约(持仓量最大)
     std::vector<std::string> subscribePool;
@@ -47,7 +48,9 @@ private:
     void prepareTd();
     void initSubscribePool();
     void saveTicks();
+    void saveTickToFile(const char* symbol,std::vector<TickData*>& ticks);
     void loadTicks();
-    void calcIndex(const std::string& productID,TickData* mainTick);
+    void loadTickFromFile(const std::string fname,TickStorage* result);
+    void calcIndex(const std::string& productID,const TickData* mainTick);
 };
 #endif // DATARECEIVER_H
