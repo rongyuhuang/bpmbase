@@ -17,7 +17,8 @@ HEADERS += \
     $$UTILS_DIR/cxxconfig.h \
     $$UTILS_DIR/charset.h \
     $$UTILS_DIR/datetime.h \
-    $$UTILS_DIR/process.h
+    $$UTILS_DIR/process.h \
+    $$PWD/utils/cppjson.h
 
 
 SOURCES += \

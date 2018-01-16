@@ -17,6 +17,23 @@
 #include"utils/timeutil.h"
 #include<fmt/format.h>
 #include"datareceiver.h"
+
+#include"utils/cppjson.h"
+
+void testCppJson()
+{
+    CppJson json;
+    json.StartArray();
+    for(int i=0;i<3;++i)
+    {
+        json.StartObject();
+        json.WriteJson("ID",i);
+        json.WriteJson("Name","Pter");
+        json.EndObject();
+    }
+    json.EndArray();
+    std::cout<<json.GetString()<<std::endl;
+}
 void test_md()
 {
   LOG(INFO) << __FUNCTION__;
@@ -129,6 +146,7 @@ int main(int argc, char *argv[])
     FLAGS_alsologtostderr = true; //设置日志消息除了日志文件是否输出到标准输出
     google::SetStderrLogging(google::GLOG_INFO); //设置日志输出最低级别
     google::InitGoogleLogging(argv[0]);
+    testCppJson();
     char cNow[20];
     bpm_getLocalTime(cNow);
     LOG(INFO)<<fmt::format( "Start to test {} @ {}!","EASYCTP",cNow);
