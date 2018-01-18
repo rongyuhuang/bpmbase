@@ -26,7 +26,121 @@
 #define COMBINE_PRT '5' //备兑组合
 #define COMBINE_CLD '6' //时间价差组合
 
+
+//持仓方向
+#define POS_DIRECTION_NET '1'
+#define POS_DIRECTION_LONG '2'
+#define POS_DIRECTION_SHORT '3'
+
+//买卖方向
+#define DIRECTION_BUY '0'
+#define DIRECTION_SELL '1'
+
+//投机套保标识
+#define HEDGE_SPECULATION '1'
+#define HEDGE_ARBITRAGE '2'
+#define HEDGE_HEDGE '3'
+
+//成交类型
+
+///组合持仓拆分为单一持仓,初始化不应包含该类型的持仓
+#define TRDT_SplitCombination '#'
+///普通成交
+#define TRDT_Common '0'
+///期权执行
+#define TRDT_OptionsExecution '1'
+///OTC成交
+#define TRDT_OTC '2'
+///期转现衍生成交
+#define TRDT_EFPDerived '3'
+///组合衍生成交
+#define TRDT_CombinationDerived '4'
+
 ////结构体定义
+struct AccountInfo{
+    /*
+     * CThostFtdcTradingAccountField
+    */
+    char brokerID[STR_LEN_SMALL];
+    char accountID[STR_LEN_SMALL];
+    double preMortgage;//-上次质押金额
+    double preCredit;//- 上次信用额度
+    double preDeposit;// + 上次存款额
+    double preBalance;//+ 上次结算准备金
+    double preMargin;//+ 上次占用的保证金
+    double interestBase;// 利息基数
+    double deposit;//入金金额
+    double withdraw; //出金金额
+    double frozenMargin; //冻结保证金
+    double frozenCash; //冻结资金
+    double frozenCommission;//冻结手续费
+    double currMargin; //占用保证金
+    double commission; //手续费
+    double closeProfit; //平仓盈亏
+    double positionProfit; //持仓盈亏
+    double balance;//期货结算准备金
+    double availabe; //可用资金
+    double withdrawQuota;//可取资金
+
+};
+
+struct PositionDetailInfo{
+    char brokerID[STR_LEN_SMALL];
+    char investorID[STR_LEN_SMALL];
+    char instrumentID[STR_LEN_SMALL];
+    int hedgeFlag;//投机套保标识? char or int？
+    int direction; //买卖
+    char openDate[STR_LEN_SMALL];
+    char tradeID[STR_LEN_SMALL]; //openDate+tradeID 唯一标志
+    double openPrice;
+    int volume;//当前持仓量
+    int tradeType; //成交类型 int ? char
+    double closeProfitByDate;//逐日平仓盈亏
+    double closeProfitByTrade;//逐笔平仓盈亏
+    double positionProfitByDate;//逐日持仓盈亏
+    double positionProfitByTrade;//逐笔平仓盈亏 ？有没有必要维护？
+    double margin;
+    double presettlementPrice;
+    int closeVolume;//平仓量
+};
+
+struct TradeInfo{
+    char brokerID[STR_LEN_SMALL];
+    char investorID[STR_LEN_SMALL];
+    char instrumentID[STR_LEN_SMALL];
+    char orderRef[STR_LEN_SMALL];//报单引用
+    int hedgeFlag;//投机套保标识? char or int？
+    int offsetFlag;//开平标识
+    int direction; //买卖
+    double price;
+    int volume;
+    char tradeDate[STR_LEN_SMALL];//成交日期,格式为
+    char tradeTime[STR_LEN_SMALL];//成交时间，格式为
+    char tradeID[STR_LEN_SMALL]; //openDate+tradeID 唯一标志
+    int tradeType;
+    char exchangeID[STR_LEN_SMALL];
+    char orderSysID[STR_LEN_SMALL]; //报单编号(交易所返回)
+};
+
+struct OrderInfo
+{
+    char brokerID[STR_LEN_SMALL];
+    char investorID[STR_LEN_SMALL];
+    char instrumentID[STR_LEN_SMALL];
+    char orderRef[STR_LEN_SMALL];//报单引用
+    int hedgeFlag;//投机套保标识? char or int？
+    int offsetFlag;//开平标识
+    int direction; //买卖
+    double limitPrice;
+    int volume;
+    int orderStatus;
+    long long insertDatetime;
+    int tradedVolume;//已成交数量
+    int remainVolume; //未成交数量
+    double frozenMargin;
+    double frozenCommission;
+
+};
 
 struct InstrumentInfo{
     char symbol[STR_LEN_SMALL];

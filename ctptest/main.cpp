@@ -77,6 +77,8 @@ void prepare_md() {
 void test_td()
 {
     td_start();
+    td_queryPosition();
+    return;
     TickData* mdSnap=nullptr;
     int count=0;
     int ret =td_queryMarketData(&mdSnap,&count);
@@ -154,13 +156,13 @@ int main(int argc, char *argv[])
 //    prepare_md();
 //    test_md();
 
-//    prepare_td();
-//    test_td();
-    Config cfg("sim03");
-    DataReceiver dr(cfg);
-    dr.start();
-    getchar();
-    dr.stop();
+    prepare_td();
+    test_td();
+//    Config cfg("sim03");
+//    DataReceiver dr(cfg);
+//    dr.start();
+//    getchar();
+//    dr.stop();
     google::ShutdownGoogleLogging();
     getchar();
     return 0;

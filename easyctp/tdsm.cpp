@@ -41,6 +41,7 @@ void  TdSm::stop()
     started=false;
     reqID=0;
     sync_status=0;
+
 }
 const char*  TdSm::getTradingDay()
 {
@@ -51,9 +52,58 @@ const char*  TdSm::getTradingDay()
 void TdSm::queryInstrument()
 {}
 void TdSm::queryAccount()
-{}
+{
+    CHECK(started);
+    CHECK(sync_status==0);
+    sync_status=1;
+
+    CThostFtdcQryTradingAccountField req;
+    memset(&req,0,sizeof(req));
+    strncpy(req.BrokerID,brokerID.c_str(),sizeof(req.BrokerID)-1);
+    strncpy(req.InvestorID,userID.c_str(),sizeof(req.InvestorID)-1);
+
+    flowControl();
+    int reqid = ++reqID;
+    int ret =tdApi->ReqQryTradingAccount(&req,reqid);
+    if(ret==0)
+    {
+        LOG(INFO)<<__FUNCTION__<<",success";
+    }
+    else
+    {
+        LOG(INFO)<<__FUNCTION__<<",fail:"<<ret;
+    }
+}
 void  TdSm::queryPosition()
-{}
+{
+    CHECK(started);
+    CHECK(sync_status==0);
+    sync_status=1;
+    {
+        std::lock_guard<std::mutex> lock(qryMutex);
+        for(auto x:positionDetails)
+        {
+            free(x);
+        }
+        positionDetails.clear();
+    }
+    CThostFtdcQryInvestorPositionDetailField req;
+    memset(&req,0,sizeof(req));
+    int reqid = ++reqID;
+    strncpy(req.BrokerID,brokerID.c_str(),sizeof(req.BrokerID)-1);
+    strncpy(req.InvestorID,userID.c_str(),sizeof(req.InvestorID)-1);
+
+    flowControl();
+    int result = tdApi->ReqQryInvestorPositionDetail(&req,reqid);
+    if(result==0)
+    {
+        LOG(INFO)<<__FUNCTION__<<",success";
+    }
+    else
+    {
+        LOG(INFO)<<__FUNCTION__<<",fail:"<<result;
+    }
+}
 void  TdSm::queryOrder()
 {}
 void  TdSm::queryTrade()
@@ -271,7 +321,35 @@ void TdSm::OnRspQryTrade(CThostFtdcTradeField *pTrade, CThostFtdcRspInfoField *p
 void TdSm::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *pInvestorPosition, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {}
 
 ///请求查询资金账户响应
-void TdSm::OnRspQryTradingAccount(CThostFtdcTradingAccountField *pTradingAccount, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {}
+void TdSm::OnRspQryTradingAccount(CThostFtdcTradingAccountField *pTradingAccount, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+    if(!CtpUtils::isErrorRsp(pRspInfo,nRequestID)&& pTradingAccount)
+    {
+        CHECK(account == nullptr);
+        std::lock_guard<std::mutex> lock(qryMutex);
+        account = (AccountInfo*)malloc(sizeof(AccountInfo));
+        memset(account,0,sizeof(account));
+        strncpy(account->accountID,pTradingAccount->AccountID, sizeof(account->accountID)-1);
+        strncpy(account->brokerID,pTradingAccount->BrokerID,sizeof(account->brokerID)-1);
+
+        account->availabe = pTradingAccount->Available;
+        account->balance = pTradingAccount->Balance;
+        account->closeProfit = pTradingAccount->CloseProfit;
+        account->commission = pTradingAccount->Commission;
+        account->currMargin = pTradingAccount->CurrMargin;
+        account->deposit = pTradingAccount->Deposit;
+        account->frozenCommission = pTradingAccount->FrozenCommission;
+        account->frozenCash = pTradingAccount->FrozenCash;
+        account->frozenMargin = pTradingAccount->FrozenMargin;
+        account->positionProfit = pTradingAccount->PositionProfit;
+        account->preBalance = pTradingAccount->PreBalance;
+    }
+    if(bIsLast)
+    {
+        LOG(INFO)<<__FUNCTION__;
+        sync_status=2;
+    }
+}
 
 ///请求查询投资者响应
 void TdSm::OnRspQryInvestor(CThostFtdcInvestorField *pInvestor, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {}
@@ -356,7 +434,43 @@ void TdSm::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlementInfo
 void TdSm::OnRspQryTransferBank(CThostFtdcTransferBankField *pTransferBank, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {}
 
 ///请求查询投资者持仓明细响应
-void TdSm::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailField *pInvestorPositionDetail, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {}
+void TdSm::OnRspQryInvestorPositionDetail(CThostFtdcInvestorPositionDetailField *pInvestorPositionDetail, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+{
+    if(!CtpUtils::isErrorRsp(pRspInfo,nRequestID) && pInvestorPositionDetail)
+    {
+        PositionDetailInfo* pos = (PositionDetailInfo*)malloc(sizeof(PositionDetailInfo));
+        memset(pos,0,sizeof(pos));
+        strncpy(pos->brokerID,pInvestorPositionDetail->BrokerID,sizeof(pos->brokerID)-1);
+        strncpy(pos->investorID,pInvestorPositionDetail->InvestorID,sizeof(pos->investorID)-1);
+        strncpy(pos->openDate,pInvestorPositionDetail->OpenDate,sizeof(pos->openDate)-1);
+        strncpy(pos->instrumentID,pInvestorPositionDetail->InstrumentID,sizeof(pos->instrumentID)-1);
+        pos->closeProfitByDate = pInvestorPositionDetail->CloseProfitByDate;
+        pos->closeProfitByTrade = pInvestorPositionDetail->CloseProfitByTrade;
+        pos->closeVolume = pInvestorPositionDetail->CloseVolume;
+        pos->direction = POS_DIRECTION_SHORT;
+        if(pInvestorPositionDetail->Direction== DIRECTION_BUY)
+        {
+            pos->direction = POS_DIRECTION_LONG;
+        }
+        pos->hedgeFlag = HEDGE_SPECULATION; //默认投机
+        pos->margin = pInvestorPositionDetail->Margin;
+        pos->openPrice = pInvestorPositionDetail->OpenPrice;
+        pos->positionProfitByDate = pInvestorPositionDetail->PositionProfitByDate;
+        pos->positionProfitByTrade = pInvestorPositionDetail->PositionProfitByTrade;
+        pos->presettlementPrice = pInvestorPositionDetail->LastSettlementPrice;
+        pos->volume =pInvestorPositionDetail->Volume;
+        strncpy(pos->tradeID,pInvestorPositionDetail->TradeID,sizeof(pos->tradeID));
+        pos->tradeType = TRDT_Common;//普通成交
+
+        std::lock_guard<std::mutex> lock(qryMutex);
+        positionDetails.push_back(pos);
+    }
+    if(bIsLast)
+    {
+        LOG(INFO)<<__FUNCTION__;
+        sync_status=2;
+    }
+}
 
 ///请求查询客户通知响应
 void TdSm::OnRspQryNotice(CThostFtdcNoticeField *pNotice, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {}

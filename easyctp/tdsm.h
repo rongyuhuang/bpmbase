@@ -49,6 +49,11 @@ public:
     //查询相关的控制与数据
     std::mutex qryMutex;
     std::list<TickData*> mdSnap;
+    std::list<InstrumentInfo*> Instruments;
+    AccountInfo* account;
+    std::list<PositionDetailInfo*> positionDetails;
+    std::list<TradeInfo*> trades;
+
 private:
     CThostFtdcTraderApi* tdApi = nullptr;
 

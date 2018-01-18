@@ -86,7 +86,35 @@ static bool checkStatus()
  }
  int __cdecl td_queryPosition()
  {
-     return STATUS_OK;
+     if(!g_tdSm.started)
+     {
+         return STATUS_STOPPED;
+     }
+     if(g_tdSm.sync_status>0)
+     {
+         return STATUS_BUSY;
+     }
+     g_tdSm.queryPosition();
+     if(checkStatus())
+     {
+         std::lock_guard<std::mutex> lock(g_tdSm.qryMutex);
+         int count = g_tdSm.positionDetails.size();
+         LOG(INFO)<<__FUNCTION__<<",result="<<count;
+         if(count==0)
+         {
+             g_tdSm.sync_status=0;
+             return STATUS_OK;
+         }
+         else
+         {   g_tdSm.sync_status=0;
+             return STATUS_OK;
+         }
+         //TODO:handle position details
+     }
+     else
+     {
+         return STATUS_TIMEOUT;
+     }
  }
  int __cdecl td_queryOrder()
  {
