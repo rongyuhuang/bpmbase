@@ -9,4 +9,5 @@ SUBDIRS = \
     qtbinpatcher \
     CppPrimerExercise \
     InDepthCpp11 \
-    ctptest
+    ctptest \
+    cpp150tips
