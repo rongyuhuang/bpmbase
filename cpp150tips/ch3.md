@@ -51,3 +51,51 @@ new([])/delete([])的操作中，C++需要知道指针所指内存块的大小�
 
 
 ## Tip 31 了解new_handler的所作所为
+
+operator new 申请内存失败后，编译器会调用一个错误处理函数/new-handler进行相应处理，好的new-handler函数需要遵循以下策略之一：
+1. Make more memory available,operator new在进行多次的内存分配时，可能会尝试使其下一次分配的内存更大，然后在new-handler第一次被调用到时释放它供程序使用；
+2. Install a different new-handler,加入当前new-handler不能获得更多的内存供operator new分配使用，而另一个new-handler可以时，当前new-handler会调用set_new_handler在它的位置上安装另一个new-handler，这样下次 operator new在调用new-handler时，会调用最新安装的那个；
+3. Deinstall the new-handler,即将空指针传给set_new_handler,也就没有了相应的new-handler,当内存分配失败时，operator new会抛出一个异常
+4. Throw an exception,跑出一个类型为bad_alloc或继承自bad_alloc的异常
+5. Not return,直接调用abort或exit结束应用程序
+
+这些各式各样的new-handler函数是通过调用标准库函数set_new_handler进行特殊定制的，该库函数位于 <new\>中。如果需要对 class-sepeicfic new-handler支持，需要为每一个class提供专属的set_new_handler和operator new版本，以下以class A为例：
+
+    class A
+    {
+	public:
+		static std::new_handler set_new_handler(std::new_handler p)throw()
+		{
+			std::new_handler oldHandler = m_currHandler;
+			m_currHandler = p;
+			return oldHandler;
+		}
+
+		static void* operator new(std::size_t size)throw(std::bad_alloc)
+		{
+			set_new_handler(MemoryErrorHanding);
+			return ::operator new(size);
+		}
+
+		static void MemoryErrorHandling()
+		{
+			//error handling code
+		}
+	private:
+		static std::new_handler m_currHandler;
+    }
+
+
+## Tip 32 借助工具检测内存泄漏问题
+
+内存泄漏主要指的是堆内存泄露，检测内存泄露的关键是要能截获对分配内存和释放内存的函数的调用，用以跟踪每一块内存的生命周期。
+
+1. 内嵌式
+   MS C-Runtime Library：
+2. 外挂式
+   Windows平台：BoundsChecker,Insure++;
+   Linux平台：Rational Purify,Valgrind
+
+
+## Tip 33  小心翼翼的重载operator new/operator delete
+
